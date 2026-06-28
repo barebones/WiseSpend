@@ -41,12 +41,6 @@ import com.sandesh.wisespend.NavItems
 import com.sandesh.wisespend.ui.theme.WiseSpendTheme
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-import androidx.compose.ui.graphics.BlurEffect
-import androidx.compose.ui.graphics.TileMode
-
-/* ──────────────────────────────────────────────────────────────
-   Main floating navigation bar
-   ────────────────────────────────────────────────────────────── */
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
@@ -66,7 +60,6 @@ fun WiseNavigationBar(
     val glassTint = MaterialTheme.colorScheme.primary.copy(alpha = 0.04f)
     val glassBorder = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
 
-    // ── capsule gradient ──
     val capsuleGradient = Brush.linearGradient(
         colors = listOf(
             primary.copy(alpha = 0.22f),
@@ -75,7 +68,6 @@ fun WiseNavigationBar(
     )
     val capsuleBorder = primary.copy(alpha = 0.20f)
 
-    val activeColor = primary
     val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
 
     Box(
@@ -109,7 +101,6 @@ fun WiseNavigationBar(
             val horizontalPad = 10.dp
             val verticalPad = 10.dp
 
-            // ── sliding capsule (drawn behind everything) ──
             val capsuleCorner = 22.dp
             SlidingCapsule(
                 pagePosition = pagePosition,
@@ -122,7 +113,6 @@ fun WiseNavigationBar(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // ── tab row ──
             Row(
                 modifier = Modifier
                     .fillMaxSize()
@@ -136,7 +126,7 @@ fun WiseNavigationBar(
                     ExpandingNavTab(
                         item = item,
                         selectionFraction = fraction,
-                        activeColor = activeColor,
+                        activeColor = primary,
                         inactiveColor = inactiveColor,
                         onClick = { onSelect(index) },
                         modifier = Modifier.weight(1f + 0.50f * fraction)
@@ -146,10 +136,6 @@ fun WiseNavigationBar(
         }
     }
 }
-
-/* ──────────────────────────────────────────────────────────────
-   Sliding capsule drawn on a Canvas so it animates smoothly
-   ────────────────────────────────────────────────────────────── */
 
 @Composable
 private fun SlidingCapsule(
@@ -183,7 +169,6 @@ private fun SlidingCapsule(
         modifier = modifier.drawBehind {
             val availableW = size.width - hPadPx * 2
             val totalGap = gapPx * (tabCount - 1)
-            val tabW = (availableW - totalGap) / tabCount
 
             // expand selected tab
             val expandFactor = 0.50f
@@ -195,7 +180,6 @@ private fun SlidingCapsule(
             val totalWeight = weights.sum()
 
             // capsule width from weight
-            val capsuleFrac = 1f - minOf(1f, abs(animatedPosition - animatedPosition.toInt().toFloat()))
             val leftIdx = animatedPosition.toInt().coerceIn(0, tabCount - 1)
             val rightIdx = (leftIdx + 1).coerceIn(0, tabCount - 1)
 
@@ -215,21 +199,18 @@ private fun SlidingCapsule(
             val cx = lx + (rx - lx) * frac
             val cw = lw + (rw - lw) * frac
 
-            val top = vPadPx
             val height = size.height - vPadPx * 2
 
-            // fill
             drawRoundRect(
                 brush = gradient,
-                topLeft = Offset(cx, top),
+                topLeft = Offset(cx, vPadPx),
                 size = Size(cw, height),
                 cornerRadius = CornerRadius(cornerPx, cornerPx)
             )
 
-            // border
             drawRoundRect(
                 color = borderColor,
-                topLeft = Offset(cx, top),
+                topLeft = Offset(cx, vPadPx),
                 size = Size(cw, height),
                 cornerRadius = CornerRadius(cornerPx, cornerPx),
                 style = androidx.compose.ui.graphics.drawscope.Stroke(width = borderPx)
@@ -237,10 +218,6 @@ private fun SlidingCapsule(
         }
     )
 }
-
-/* ──────────────────────────────────────────────────────────────
-   Single tab — expands + bounce on click
-   ────────────────────────────────────────────────────────────── */
 
 @Composable
 private fun ExpandingNavTab(
@@ -253,7 +230,6 @@ private fun ExpandingNavTab(
 ) {
     val scope = rememberCoroutineScope()
 
-    // ── bounce ──
     val bounceScale = remember { Animatable(1f) }
 
     val iconTint by animateColorAsState(
@@ -363,10 +339,6 @@ private fun ExpandingNavTab(
     }
 }
 
-/* ──────────────────────────────────────────────────────────────
-   Util
-   ────────────────────────────────────────────────────────────── */
-
 private fun lerp(start: Color, end: Color, fraction: Float): Color {
     val f = fraction.coerceIn(0f, 1f)
     return Color(
@@ -376,10 +348,6 @@ private fun lerp(start: Color, end: Color, fraction: Float): Color {
         alpha = start.alpha + (end.alpha - start.alpha) * f
     )
 }
-
-/* ──────────────────────────────────────────────────────────────
-   Preview
-   ────────────────────────────────────────────────────────────── */
 
 @Preview(showBackground = true, backgroundColor = 0xFFF0F0F0)
 @Composable

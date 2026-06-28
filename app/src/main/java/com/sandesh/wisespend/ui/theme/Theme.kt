@@ -1,57 +1,72 @@
 package com.sandesh.wisespend.ui.theme
 
-import android.app.Activity
-import android.os.Build
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-
-private val DarkColorScheme = darkColorScheme(
-    primary = MonoPrimaryDark,
-    secondary = MonoSecondaryDark,
-    tertiary = MonoTertiaryDark,
-    background = MonoBackgroundDark,
-    surface = MonoSurfaceDark,
-    onPrimary = Color.Black,        // Dark text on bright primary
-    onSecondary = Color.Black,
-    onTertiary = Color.Black,
-    onBackground = Color.White,     // White text on dark background
-    onSurface = Color.White
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = MonoPrimaryLight,
-    secondary = MonoSecondaryLight,
-    tertiary = MonoTertiaryLight,
-    background = MonoBackgroundLight,
-    surface = MonoSurfaceLight,
-    onPrimary = Color.White,        // White text on dark primary
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1A1A1A), // Dark text on light background
-    onSurface = Color(0xFF1A1A1A)
-)
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
 @Composable
 fun WiseSpendTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Set default to false so your monochrome styling isn't ignored on Android 12+
-    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    val mode = ThemeState.themeMode.value
+    val scheme = ThemeState.colorScheme.value
+    val isSystemDark = isSystemInDarkTheme()
+
+    val isDark = when (mode) {
+        AppThemeMode.LIGHT -> false
+        AppThemeMode.DARK -> true
+        AppThemeMode.AMOLED -> true
+        AppThemeMode.SYSTEM -> isSystemDark
+    }
+
+    val colorScheme = resolveColorScheme(
+        scheme = scheme,
+        mode = mode,
+        isSystemDark = isSystemDark
+    )
+
+    val view = LocalView.current
+
+    // ── Fix system bars appearance ──
+    LaunchedEffect(isDark, colorScheme.background) {
+        val activity = view.context as? ComponentActivity ?: return@LaunchedEffect
+
+        activity.enableEdgeToEdge(
+            statusBarStyle = if (isDark) {
+                SystemBarStyle.dark(
+                    scrim = Color.Transparent.toArgb()
+                )
+            } else {
+                SystemBarStyle.light(
+                    scrim = Color.Transparent.toArgb(),
+                    darkScrim = Color.Transparent.toArgb()
+                )
+            },
+            navigationBarStyle = if (isDark) {
+                SystemBarStyle.dark(
+                    scrim = Color.Transparent.toArgb()
+                )
+            } else {
+                SystemBarStyle.light(
+                    scrim = Color.Transparent.toArgb(),
+                    darkScrim = Color.Transparent.toArgb()
+                )
+            }
+        )
+
+        // Explicitly set status bar icon colors
+        WindowCompat.getInsetsController(activity.window, view).apply {
+            isAppearanceLightStatusBars = !isDark
+            isAppearanceLightNavigationBars = !isDark
         }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
     }
 
     MaterialTheme(

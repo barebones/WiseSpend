@@ -1,85 +1,53 @@
-# Built application files
-*.apk
-*.aar
-*.ap_
-*.aab
+# Gradle
+.gradle/
+build/
+**/build/
+**/release/
+app/release
 
-# Release output directories
-app/*/release/
-app/*/debug/
+# Local configuration
+local.properties
 
-# Files for the ART/Dalvik VM
-*.dex
+# Android Studio
+.idea/
+*.iml
+captures/
+.navigation/
 
-# Java class files
-*.class
-
+# Kotlin
+.kotlin/
 
 # Generated files
 bin/
 gen/
 out/
 
-# Gradle files
-.gradle/
-build/
+# Native build
+.externalNativeBuild/
+.cxx/
 
-local.properties
+# APKs & Bundles
+*.apk
+*.aab
+*.aar
+*.ap_
 
-# Log Files
+# Dalvik
+*.dex
+
+# Logs
 *.log
 
-# Android Studio Navigation editor temp files
-.navigation/
-
-# Android Studio captures folder
-captures/
-
-
-# IntelliJ
-*.iml
-.idea/
-.idea/workspace.xml
-# Keystore files
-*.keystore
-*.jks
-*.p12
-*.pem
-*.key
-.idea/tasks.xml
-.idea/gradle.xml
-.idea/assetWizardSettings.xml
-.idea/dictionaries
-.idea/libraries
-.idea/caches
-.idea/modules.xml
-.idea/navEditor.xml
-.idea/vcs.xml
-.idea/jsLibraryMappings.xml
-.idea/datasources.xml
-.idea/dataSources.ids
-.idea/sqlDataSources.xml
-.idea/dynamic.xml
-.idea/uiDesigner.xml
-.idea/dbnavigator.xml
-
-
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+# OS files
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+Thumbs.db
 
-
-# Keystore files
+# Signing keys (IMPORTANT)
+*.jks
+*.keystore
+*.key
+*.pem
+*.p12
 key.properties
 keystore.properties
 app-signing.properties
