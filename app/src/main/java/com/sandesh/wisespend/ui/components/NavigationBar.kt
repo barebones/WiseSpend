@@ -53,22 +53,9 @@ fun WiseNavigationBar(
     if (items.isEmpty()) return
 
     val primary = MaterialTheme.colorScheme.primary
-    val secondary = MaterialTheme.colorScheme.secondary
-
-    // ── glass colours ──
-    val glassBase = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)
-    val glassTint = MaterialTheme.colorScheme.primary.copy(alpha = 0.04f)
-    val glassBorder = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
-
-    val capsuleGradient = Brush.linearGradient(
-        colors = listOf(
-            primary.copy(alpha = 0.22f),
-            secondary.copy(alpha = 0.14f)
-        )
-    )
-    val capsuleBorder = primary.copy(alpha = 0.20f)
-
-    val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
+    val surface = MaterialTheme.colorScheme.surface
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    val outlineVariant = MaterialTheme.colorScheme.outlineVariant
 
     Box(
         modifier = modifier
@@ -81,35 +68,26 @@ fun WiseNavigationBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(78.dp)
-                // shadow behind the glass
                 .shadow(
-                    elevation = 24.dp,
-                    shape = RoundedCornerShape(30.dp),
-                    ambientColor = primary.copy(alpha = 0.10f),
-                    spotColor = primary.copy(alpha = 0.08f)
+                    elevation = 8.dp, // Reduced for a clean, non-glass look
+                    shape = RoundedCornerShape(30.dp)
                 )
                 .clip(RoundedCornerShape(30.dp))
-                .then(Modifier)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(glassBase, glassTint)
-                    )
-                )
-                .border(1.dp, glassBorder, RoundedCornerShape(30.dp))
+                .background(surface) // Solid surface background
+                .border(1.dp, outlineVariant, RoundedCornerShape(30.dp))
         ) {
             val count = items.size
             val horizontalPad = 10.dp
             val verticalPad = 10.dp
-
             val capsuleCorner = 22.dp
+
             SlidingCapsule(
                 pagePosition = pagePosition,
                 tabCount = count,
                 horizontalPad = horizontalPad,
                 verticalPad = verticalPad,
                 cornerRadius = capsuleCorner,
-                gradient = capsuleGradient,
-                borderColor = capsuleBorder,
+                capsuleColor = primary,
                 modifier = Modifier.fillMaxSize()
             )
 
@@ -126,8 +104,8 @@ fun WiseNavigationBar(
                     ExpandingNavTab(
                         item = item,
                         selectionFraction = fraction,
-                        activeColor = primary,
-                        inactiveColor = inactiveColor,
+                        activeColor = MaterialTheme.colorScheme.onPrimary,
+                        inactiveColor = onSurfaceVariant.copy(alpha = 0.7f),
                         onClick = { onSelect(index) },
                         modifier = Modifier.weight(1f + 0.50f * fraction)
                     )
@@ -144,8 +122,7 @@ private fun SlidingCapsule(
     horizontalPad: Dp,
     verticalPad: Dp,
     cornerRadius: Dp,
-    gradient: Brush,
-    borderColor: Color,
+    capsuleColor: Color,
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
@@ -163,14 +140,12 @@ private fun SlidingCapsule(
     val vPadPx = with(density) { verticalPad.toPx() }
     val cornerPx = with(density) { cornerRadius.toPx() }
     val gapPx = with(density) { 6.dp.toPx() }
-    val borderPx = with(density) { 1.5.dp.toPx() }
 
     Box(
         modifier = modifier.drawBehind {
             val availableW = size.width - hPadPx * 2
             val totalGap = gapPx * (tabCount - 1)
 
-            // expand selected tab
             val expandFactor = 0.50f
             val baseWeight = 1f
             val weights = (0 until tabCount).map { i ->
@@ -179,7 +154,6 @@ private fun SlidingCapsule(
             }
             val totalWeight = weights.sum()
 
-            // capsule width from weight
             val leftIdx = animatedPosition.toInt().coerceIn(0, tabCount - 1)
             val rightIdx = (leftIdx + 1).coerceIn(0, tabCount - 1)
 
@@ -202,18 +176,10 @@ private fun SlidingCapsule(
             val height = size.height - vPadPx * 2
 
             drawRoundRect(
-                brush = gradient,
+                color = capsuleColor,
                 topLeft = Offset(cx, vPadPx),
                 size = Size(cw, height),
                 cornerRadius = CornerRadius(cornerPx, cornerPx)
-            )
-
-            drawRoundRect(
-                color = borderColor,
-                topLeft = Offset(cx, vPadPx),
-                size = Size(cw, height),
-                cornerRadius = CornerRadius(cornerPx, cornerPx),
-                style = androidx.compose.ui.graphics.drawscope.Stroke(width = borderPx)
             )
         }
     )

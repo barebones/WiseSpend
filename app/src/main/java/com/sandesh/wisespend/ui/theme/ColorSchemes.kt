@@ -193,7 +193,7 @@ private val EmberDark = SchemeColors(
 
 
 private fun SchemeColors.toAmoled() = copy(
-    surface = Color(0xFF0A0A0A),
+    surface = Color(0xFF151515),
     background = Color.Black,
     onBackground = Color.White,
     onSurface = Color.White

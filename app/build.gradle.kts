@@ -35,6 +35,8 @@ android {
 }
 
 dependencies {
+    implementation(libs.icons.lucide)
+    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.animation.core)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material.icons.extended)
