@@ -1,0 +1,18 @@
+package com.sandesh.wisespend.data.local
+
+import androidx.room.*
+import com.sandesh.wisespend.data.model.UserSettings
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface SettingsDao {
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(settings: UserSettings)
+
+    @Query("SELECT * FROM user_settings WHERE id = 1")
+    fun getSettings(): Flow<UserSettings?>
+
+    @Query("UPDATE user_settings SET userName = :name Where id = 1")
+    suspend fun updateUsername(name: String)
+}

@@ -39,12 +39,12 @@ data class NavItems(
 
 @Composable
 fun MainScreen(
-    onNavigateToAddExpense:() -> Unit
+    onNavigateToAddExpense:() -> Unit,
+    onNavigateToNotifications: () -> Unit
 ) {
     val navItems = listOf(
         NavItems("Home", Icons.Default.Home),
         NavItems("Settings", Icons.Default.Settings),
-
     )
 
     val pagerState = rememberPagerState{ navItems.size }
@@ -97,7 +97,10 @@ fun MainScreen(
             page ->
             run {
                 when (page) {
-                    0 -> HomeScreen()
+                    0 -> HomeScreen(
+                        Modifier,
+                        onNavigateToNotifications = onNavigateToNotifications,
+                    )
                     1 -> SettingsScreen()
                 }
             }
@@ -109,7 +112,7 @@ fun MainScreen(
 @Composable
 fun MainScreenPreview(){
     WiseSpendTheme {
-        MainScreen(onNavigateToAddExpense = {})
+        MainScreen({},{})
     }
 }
 

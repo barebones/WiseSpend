@@ -1,4 +1,5 @@
 plugins {
+    alias(libs.plugins.ksp)
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.jetbrains.kotlin.serialization)
@@ -35,7 +36,14 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.icons.lucide)
+    implementation(libs.androidx.graphics.shapes)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.animation.core)
     implementation(platform(libs.androidx.compose.bom))

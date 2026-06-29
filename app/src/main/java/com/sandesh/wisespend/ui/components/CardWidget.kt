@@ -1,6 +1,11 @@
 package com.sandesh.wisespend.ui.components
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,42 +14,72 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import com.sandesh.wisespend.ui.screens.TextGray
 import com.sandesh.wisespend.ui.theme.WiseSpendTheme
-import androidx.compose.animation.core.*
-import androidx.compose.runtime.*
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
-fun CardWidget(modifier: Modifier = Modifier, balance: Float) {
+fun CardWidget(
+    modifier: Modifier = Modifier,
+    budget: Double,
+    spent: Double,
+    onSetBudget: (Double) -> Unit
+) {
 
     var isBalanceVisible by remember { mutableStateOf(true) }
+    var showBudgetDialog by remember { mutableStateOf(false) }
 
-    val displayText = if (isBalanceVisible) "₹ $balance" else "₹ •••••"
+    val available = (budget - spent).coerceAtLeast(0.0)
+    val displayText = if (isBalanceVisible) "₹ ${"%.0f".format(available)}" else "₹ •••••"
+
+    if (showBudgetDialog) {
+        SetBudgetDialog(
+            currentBudget = budget,
+            onDismiss = { showBudgetDialog = false },
+            onConfirm = { newBudget ->
+                onSetBudget(newBudget)
+                showBudgetDialog = false
+            }
+        )
+    }
 
     Card(
         modifier = modifier
@@ -70,6 +105,20 @@ fun CardWidget(modifier: Modifier = Modifier, balance: Float) {
                     letterSpacing = 0.4.sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
                 )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                        .clickable{ showBudgetDialog = true }
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "Set Budget",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
                 Box(
                     modifier = Modifier
                         .background(
@@ -114,10 +163,107 @@ fun CardWidget(modifier: Modifier = Modifier, balance: Float) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                BudgetProgress(60f, 100f)
+                BudgetProgress(spent.toFloat(), budget.toFloat())
             }
 
 
+        }
+    }
+}
+@Composable
+fun SetBudgetDialog(
+    currentBudget: Double,
+    onDismiss: () -> Unit,
+    onConfirm: (Double) -> Unit
+) {
+    var input by remember { mutableStateOf(if (currentBudget > 0) currentBudget.toInt().toString() else "") }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Set Monthly Budget",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(
+                            1.5.dp,
+                            MaterialTheme.colorScheme.onSurface.copy(0.15f),
+                            RoundedCornerShape(12.dp)
+                        )
+                        .background(MaterialTheme.colorScheme.background, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("₹", color = TextGray, fontSize = 16.sp)
+                    Spacer(Modifier.width(8.dp))
+                    TextField(
+                        value = input,
+                        onValueChange = { input = it },
+                        modifier = Modifier.fillMaxWidth()
+                            .shadow(
+                                elevation = 4.dp,
+                                shape = RoundedCornerShape(12.dp),
+                                clip = false
+                            )
+                        ,
+                        singleLine = true,
+                        placeholder = {
+                            Text("Enter budget")
+                        },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.background,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.background,
+                            disabledContainerColor = MaterialTheme.colorScheme.background,
+
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f),
+
+                            cursorColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) { Text("Cancel", color = TextGray) }
+
+                    Button(
+                        onClick = {
+                            input.toDoubleOrNull()?.let { onConfirm(it) }
+                        },
+                        enabled = input.toDoubleOrNull() != null,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text("Save", color = MaterialTheme.colorScheme.onPrimary)
+                    }
+                }
+            }
         }
     }
 }
@@ -128,7 +274,11 @@ fun BudgetProgress(
     total: Float,
     modifier: Modifier = Modifier
 ) {
-    val progress = (spent / total).coerceIn(0f, 1f)
+    val progress = if (total > 0f) {
+        (spent / total).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
 
     var targetProgress by remember { mutableFloatStateOf(0f) }
     val animatedProgress by animateFloatAsState(
@@ -140,11 +290,11 @@ fun BudgetProgress(
         label = "progress"
     )
 
-    LaunchedEffect(Unit) {
-        // first go to half
-        targetProgress = 0.5f
-        delay(600.milliseconds)
-        // then settle to actual progress
+    LaunchedEffect(spent, total) {
+        // Go little further than actual progress value then come back
+        // for smooooooth animation
+        targetProgress = (progress * 1.3f).coerceAtMost(1f)
+        delay(300.milliseconds)
         targetProgress = progress
     }
 
@@ -190,7 +340,7 @@ fun BudgetProgress(
         Spacer(Modifier.height(10.dp))
 
         LinearProgressIndicator(
-            progress = { animatedProgress }, // Use animated progress
+            progress = { animatedProgress },
             modifier = Modifier
                 .height(16.dp)
                 .fillMaxWidth()
@@ -210,6 +360,21 @@ fun BudgetProgress(
 @Composable
 fun CardWidgetPreview() {
     WiseSpendTheme {
-        CardWidget(Modifier,100f)
+        CardWidget(Modifier,
+            budget = 1000.00,
+            spent = 100.12,
+            onSetBudget = {}
+        )
+    }
+}
+@Preview(showBackground = true)
+@Composable
+fun SetBudgetDialogPreview() {
+    WiseSpendTheme {
+        SetBudgetDialog(
+            currentBudget = 0.0,
+            onDismiss = {},
+            onConfirm = {}
+        )
     }
 }

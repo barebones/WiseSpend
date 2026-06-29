@@ -7,7 +7,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -28,7 +27,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
@@ -55,7 +53,6 @@ fun WiseNavigationBar(
     val primary = MaterialTheme.colorScheme.primary
     val surface = MaterialTheme.colorScheme.surface
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
-    val outlineVariant = MaterialTheme.colorScheme.outlineVariant
 
     Box(
         modifier = modifier
@@ -69,12 +66,11 @@ fun WiseNavigationBar(
                 .fillMaxWidth()
                 .height(78.dp)
                 .shadow(
-                    elevation = 8.dp, // Reduced for a clean, non-glass look
+                    elevation = 8.dp,
                     shape = RoundedCornerShape(30.dp)
                 )
                 .clip(RoundedCornerShape(30.dp))
-                .background(surface) // Solid surface background
-                .border(1.dp, outlineVariant, RoundedCornerShape(30.dp))
+                .background(surface)
         ) {
             val count = items.size
             val horizontalPad = 10.dp

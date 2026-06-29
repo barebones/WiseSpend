@@ -1,13 +1,31 @@
 package com.sandesh.wisespend.ui.screens
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -23,10 +41,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.LocalActivity
 import androidx.compose.material.icons.filled.LocalDining
@@ -38,15 +52,32 @@ import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Straighten
-import androidx.compose.material.icons.filled.ReceiptLong
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -55,7 +86,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.Clapperboard
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.ShoppingCart
@@ -63,6 +96,7 @@ import com.composables.icons.lucide.UtensilsCrossed
 import com.composables.icons.lucide.X
 import com.sandesh.wisespend.ui.components.CalendarWidget
 import com.sandesh.wisespend.ui.theme.WiseSpendTheme
+import com.sandesh.wisespend.viewmodel.ExpenseViewModel
 import java.time.LocalDate
 
 val TextGray = Color(0xFF7E8A97)
@@ -78,7 +112,33 @@ val defaultCategories = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddExpenseScreen(onBack: () -> Boolean) {
+fun AddExpenseScreen(
+    onBack: () -> Unit, expenseViewModel: ExpenseViewModel = viewModel()
+) {
+    val vmCategories by expenseViewModel.categories.collectAsStateWithLifecycle()
+
+    AddExpenseContent(
+        vmCategories = vmCategories,
+        onBack = onBack,
+        onSaveExpense = { title, amount, categoryName, date ->
+            expenseViewModel.addExpense(title, amount, categoryName, date)
+            onBack()
+        },
+        onCategoryAdded = { expenseViewModel.addCategory(it) },
+        onCategoryDeleted = {
+            expenseViewModel.deleteCategory(it)
+        })
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddExpenseContent(
+    vmCategories: List<ExpenseCategory>,
+    onBack: () -> Unit,
+    onSaveExpense: (String, Double, String, LocalDate) -> Unit,
+    onCategoryAdded: (ExpenseCategory) -> Unit,
+    onCategoryDeleted: (ExpenseCategory) -> Unit
+) {
     var expenseTitle by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<ExpenseCategory?>(null) }
@@ -86,54 +146,58 @@ fun AddExpenseScreen(onBack: () -> Boolean) {
     var categories by remember { mutableStateOf(defaultCategories) }
 
     Scaffold(
-        modifier = Modifier.background(MaterialTheme.colorScheme.background),
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "Add Expense",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { onBack() }) {
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowLeft,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+        modifier = Modifier.background(MaterialTheme.colorScheme.background), topBar = {
+        CenterAlignedTopAppBar(
+            title = {
+            Text(
+                text = "Add Expense",
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
             )
-        },
-        bottomBar = {
-            Button(
-                onClick = { /* TODO: save expense */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(8.dp)
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Text(
-                    text = "ADD EXPENSE",
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
+        }, navigationIcon = {
+            IconButton(onClick = { onBack() }) {
+                Icon(
+                    imageVector = Lucide.ChevronLeft,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
-        },
-        containerColor = MaterialTheme.colorScheme.background
+        }, colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background
+        )
+        )
+    }, bottomBar = {
+        Button(
+            enabled = expenseTitle.isNotBlank() && amount.toDoubleOrNull() != null && selectedCategory != null,
+            onClick = {
+                val parsedAmount = amount.toDoubleOrNull()
+                if (expenseTitle.isNotBlank() && parsedAmount != null && selectedCategory != null) {
+                    onSaveExpense(
+                        expenseTitle.trim(), parsedAmount, selectedCategory!!.name, selectedDate
+                    )
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(8.dp)
+                .imePadding()
+                .height(56.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            ),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text(
+                text = "ADD EXPENSE",
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+        }
+    }, containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -144,39 +208,26 @@ fun AddExpenseScreen(onBack: () -> Boolean) {
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             CalendarWidget(
-                selectedDate = selectedDate,
-                onDateSelected = { selectedDate = it }
-            )
+                selectedDate = selectedDate, onDateSelected = { selectedDate = it })
 
             CustomInputField(
                 label = "Expense Title",
                 value = expenseTitle,
-                onValueChange = { expenseTitle = it }
-            )
+                onValueChange = { expenseTitle = it })
 
             CustomInputField(
-                label = "Amount",
-                value = amount,
-                onValueChange = { amount = it },
-                isAmount = true
+                label = "Amount", value = amount, onValueChange = { amount = it }, isAmount = true
             )
 
             ExpenseCategorySection(
-                categories = categories,
+                categories = vmCategories,
                 selectedCategory = selectedCategory,
                 onCategorySelect = { selectedCategory = it },
-                onCategoryAdded = { newCat ->
-                    if (categories.none { it.name.equals(newCat.name, ignoreCase = true) }) {
-                        categories = categories + newCat
-                    }
-                },
-                onCategoryDeleted = { catToDelete ->
-                    categories = categories.filter { it != catToDelete }
-                    if (selectedCategory == catToDelete) {
-                        selectedCategory = null
-                    }
-                }
-            )
+                onCategoryAdded = onCategoryAdded,
+                onCategoryDeleted = { cat ->
+                    onCategoryDeleted(cat)
+                    if (selectedCategory == cat) selectedCategory = null
+                })
 
             Spacer(modifier = Modifier.height(8.dp))
         }
@@ -185,19 +236,13 @@ fun AddExpenseScreen(onBack: () -> Boolean) {
 }
 
 
-
 @Composable
 fun CustomInputField(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    isAmount: Boolean = false
+    label: String, value: String, onValueChange: (String) -> Unit, isAmount: Boolean = false
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = label,
-            color = MaterialTheme.colorScheme.onSurface.copy(0.7f),
-            fontSize = 14.sp
+            text = label, color = MaterialTheme.colorScheme.onSurface.copy(0.7f), fontSize = 14.sp
         )
 
         Row(
@@ -205,9 +250,12 @@ fun CustomInputField(
                 .fillMaxWidth()
                 .height(56.dp)
                 .border(
-                    2.dp,
-                    MaterialTheme.colorScheme.onSurface.copy(0.15f),
-                    RoundedCornerShape(16.dp)
+                    2.dp, MaterialTheme.colorScheme.onSurface.copy(0.15f), RoundedCornerShape(16.dp)
+                )
+                .shadow(
+                    elevation = 4.dp,
+                    shape = RoundedCornerShape(16.dp),
+                    clip = false
                 )
                 .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
                 .padding(horizontal = 16.dp),
@@ -216,31 +264,32 @@ fun CustomInputField(
         ) {
             if (isAmount) {
                 Text(text = "$", color = TextGray, fontSize = 16.sp)
-                Spacer(modifier = Modifier.width(8.dp))
             }
 
-
-            BasicTextField(
+            TextField(
                 value = value,
                 onValueChange = onValueChange,
-                textStyle = TextStyle(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 16.sp
-                ),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                placeholder = {
+                    Text(
+                        text = if (isAmount) "0.00" else "Enter $label"
+                    )
+                },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = if (isAmount) KeyboardType.Number else KeyboardType.Text
                 ),
-                modifier = Modifier.weight(1f),
-                decorationBox = { inner ->
-                    if (value.isEmpty()) {
-                        Text(
-                            text = if (isAmount) "0.00" else "Enter $label",
-                            color = TextGray,
-                            fontSize = 16.sp
-                        )
-                    }
-                    inner()
-                }
+                shape = RoundedCornerShape(16.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface,
+
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+
+                    cursorColor = MaterialTheme.colorScheme.primary
+                )
             )
         }
     }
@@ -322,21 +371,17 @@ fun ExpenseCategorySection(
                         onDeleteClick = {
                             onCategoryDeleted(cat)
                             deletableCategory = null // clear state
-                        }
-                    )
+                        })
                 }
             }
         }
     }
 
     if (showAddDialog) {
-        AddCategoryDialog(
-            onDismiss = { showAddDialog = false },
-            onConfirm = { newCat ->
-                onCategoryAdded(newCat)
-                showAddDialog = false
-            }
-        )
+        AddCategoryDialog(onDismiss = { showAddDialog = false }, onConfirm = { newCat ->
+            onCategoryAdded(newCat)
+            showAddDialog = false
+        })
     }
 }
 
@@ -365,10 +410,7 @@ fun CategoryChip(
                 .fillMaxSize()
                 .clip(RoundedCornerShape(16.dp))
                 .background(bgColor)
-                .combinedClickable(
-                    onClick = { onClick() },
-                    onLongClick = { onLongClick() }
-                ),
+                .combinedClickable(onClick = { onClick() }, onLongClick = { onLongClick() }),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -413,7 +455,7 @@ fun CategoryChip(
             exit = fadeOut() + scaleOut(),
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .offset(1.dp,1.dp)
+                .offset(1.dp, 1.dp)
         ) {
             Box(
                 modifier = Modifier
@@ -442,12 +484,9 @@ fun AddCategoryButton(onClick: () -> Unit) {
             .aspectRatio(1f)
             .clip(RoundedCornerShape(16.dp))
             .border(
-                1.5.dp,
-                TextGray.copy(alpha = 0.35f),
-                RoundedCornerShape(16.dp)
+                1.5.dp, TextGray.copy(alpha = 0.35f), RoundedCornerShape(16.dp)
             )
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
+            .clickable { onClick() }, contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -464,6 +503,7 @@ fun AddCategoryButton(onClick: () -> Unit) {
         }
     }
 }
+
 // ouch, need to refactor this
 val iconOptions = listOf(
     Icons.Default.Home,
@@ -473,7 +513,7 @@ val iconOptions = listOf(
     Icons.Default.School,
     Icons.Default.FitnessCenter,
     Icons.Default.Lightbulb,
-    Icons.Default.ReceiptLong,
+    Icons.Default.Receipt,
     Icons.Default.ShoppingCart,
     Icons.Default.LocalHospital,
     Icons.Default.LocalDining,
@@ -485,8 +525,7 @@ val iconOptions = listOf(
 
 @Composable
 fun AddCategoryDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (ExpenseCategory) -> Unit
+    onDismiss: () -> Unit, onConfirm: (ExpenseCategory) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var selectedIcon by remember { mutableStateOf(Icons.AutoMirrored.Filled.Label) }
@@ -538,8 +577,7 @@ fun AddCategoryDialog(
                     value = name,
                     onValueChange = { if (it.length <= 16) name = it },
                     textStyle = TextStyle(
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 15.sp
+                        color = MaterialTheme.colorScheme.onSurface, fontSize = 15.sp
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -549,8 +587,7 @@ fun AddCategoryDialog(
                             RoundedCornerShape(12.dp)
                         )
                         .background(
-                            MaterialTheme.colorScheme.background,
-                            RoundedCornerShape(12.dp)
+                            MaterialTheme.colorScheme.background, RoundedCornerShape(12.dp)
                         )
                         .padding(horizontal = 14.dp, vertical = 12.dp),
                     decorationBox = { inner ->
@@ -558,8 +595,7 @@ fun AddCategoryDialog(
                             Text("Category name", color = TextGray, fontSize = 15.sp)
                         }
                         inner()
-                    }
-                )
+                    })
 
                 Text(text = "Pick an icon", color = TextGray, fontSize = 13.sp)
 
@@ -578,8 +614,9 @@ fun AddCategoryDialog(
                                 .size(36.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(
-                                    if (icon == selectedIcon)
-                                        MaterialTheme.colorScheme.primary.copy(0.2f)
+                                    if (icon == selectedIcon) MaterialTheme.colorScheme.primary.copy(
+                                        0.2f
+                                    )
                                     else Color.Transparent
                                 )
                                 .clickable { selectedIcon = icon },
@@ -631,8 +668,19 @@ fun AddCategoryDialog(
 @Preview(showBackground = true)
 @Composable
 fun AddExpenseScreenPreview() {
-    val navController = rememberNavController()
+
+    val defaultCategories = listOf(
+        ExpenseCategory("Grocery", Lucide.ShoppingCart),
+        ExpenseCategory("Food", Lucide.UtensilsCrossed),
+        ExpenseCategory("Entertainment", Lucide.Clapperboard),
+        ExpenseCategory("Borrow/Lend", Icons.Default.Add),
+    )
     WiseSpendTheme {
-        AddExpenseScreen(onBack = { navController.popBackStack() })
+        AddExpenseContent(
+            onBack = { }, onSaveExpense = { _, _, _, _ -> },
+            vmCategories =defaultCategories,
+            onCategoryAdded = {},
+            onCategoryDeleted = {}
+        )
     }
 }
