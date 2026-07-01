@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -43,8 +42,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -84,7 +83,7 @@ fun CardWidget(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(vertical = 8.dp),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -109,7 +108,7 @@ fun CardWidget(
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                        .clickable{ showBudgetDialog = true }
+                        .clickable { showBudgetDialog = true }
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
@@ -119,27 +118,11 @@ fun CardWidget(
                         fontWeight = FontWeight.SemiBold
                     )
                 }
-                Box(
-                    modifier = Modifier
-                        .background(
-                            Color(0xFF4CAF50).copy(alpha = 0.18f),
-                            RoundedCornerShape(50)
-                        )
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "● ACTIVE",
-                        color = Color(0xFF4CAF50),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.5.sp
-                    )
-                }
             }
 
             Spacer(Modifier.height(10.dp))
 
-            Row{
+            Row {
                 Text(
                     text = displayText,
                     fontSize = 40.sp,
@@ -163,20 +146,29 @@ fun CardWidget(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                BudgetProgress(spent.toFloat(), budget.toFloat())
+                BudgetProgress(
+                    spent.toFloat(),
+                    total = budget.toFloat(),
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
 
         }
     }
 }
+
 @Composable
 fun SetBudgetDialog(
     currentBudget: Double,
     onDismiss: () -> Unit,
     onConfirm: (Double) -> Unit
 ) {
-    var input by remember { mutableStateOf(if (currentBudget > 0) currentBudget.toInt().toString() else "") }
+    var input by remember {
+        mutableStateOf(
+            if (currentBudget > 0) currentBudget.toInt().toString() else ""
+        )
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -198,26 +190,19 @@ fun SetBudgetDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .border(
-                            1.5.dp,
+                            2.dp,
                             MaterialTheme.colorScheme.onSurface.copy(0.15f),
-                            RoundedCornerShape(12.dp)
+                            RoundedCornerShape(16.dp)
                         )
-                        .background(MaterialTheme.colorScheme.background, RoundedCornerShape(12.dp))
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                        .padding(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("₹", color = TextGray, fontSize = 16.sp)
-                    Spacer(Modifier.width(8.dp))
+                    Text(text = "  ₹", color = TextGray, fontSize = 16.sp)
                     TextField(
                         value = input,
                         onValueChange = { input = it },
-                        modifier = Modifier.fillMaxWidth()
-                            .shadow(
-                                elevation = 4.dp,
-                                shape = RoundedCornerShape(12.dp),
-                                clip = false
-                            )
-                        ,
+                        modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         placeholder = {
                             Text("Enter budget")
@@ -227,12 +212,12 @@ fun SetBudgetDialog(
                         ),
                         shape = RoundedCornerShape(12.dp),
                         colors = TextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.background,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.background,
-                            disabledContainerColor = MaterialTheme.colorScheme.background,
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            disabledContainerColor = MaterialTheme.colorScheme.surface,
 
                             focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f),
+                            unfocusedIndicatorColor = Color.Transparent,
 
                             cursorColor = MaterialTheme.colorScheme.primary
                         )
@@ -360,14 +345,16 @@ fun BudgetProgress(
 @Composable
 fun CardWidgetPreview() {
     WiseSpendTheme {
-        CardWidget(Modifier,
+        CardWidget(
+            Modifier,
             budget = 1000.00,
             spent = 100.12,
             onSetBudget = {}
         )
     }
 }
-@Preview(showBackground = true)
+
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun SetBudgetDialogPreview() {
     WiseSpendTheme {

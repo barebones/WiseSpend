@@ -51,3 +51,4 @@ Thumbs.db
 key.properties
 keystore.properties
 app-signing.properties
+.hotswan/

@@ -102,6 +102,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(scrollState)
+                .padding(horizontal = 16.dp)
         ) {
             CardWidget(
                 budget = budget,
@@ -110,8 +111,7 @@ fun HomeScreen(
             )
             Spacer(modifier = Modifier.size(24.dp))
             RecentTransactionsWidget(
-                expenses = recentExpenses,
-                modifier = Modifier.padding(horizontal = 14.dp)
+                expenses = recentExpenses
             )
 
             Spacer(modifier = Modifier.size(16.dp))

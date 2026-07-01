@@ -1,5 +1,6 @@
 package com.sandesh.wisespend
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -14,6 +15,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.FloatingActionButton
@@ -27,6 +29,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sandesh.wisespend.ui.components.WiseNavigationBar
+import com.sandesh.wisespend.ui.screens.AnalyticsScreen
 import com.sandesh.wisespend.ui.screens.HomeScreen
 import com.sandesh.wisespend.ui.screens.SettingsScreen
 import com.sandesh.wisespend.ui.theme.WiseSpendTheme
@@ -44,11 +47,19 @@ fun MainScreen(
 ) {
     val navItems = listOf(
         NavItems("Home", Icons.Default.Home),
+        NavItems("Analytics", Icons.Default.BarChart),
         NavItems("Settings", Icons.Default.Settings),
     )
 
     val pagerState = rememberPagerState{ navItems.size }
     val scope = rememberCoroutineScope()
+
+    BackHandler(enabled = pagerState.currentPage != 0) {
+        scope.launch {
+            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+        }
+    }
+
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -91,7 +102,7 @@ fun MainScreen(
             state = pagerState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = innerPadding.calculateBottomPadding()),
+                .padding(bottom = innerPadding.calculateBottomPadding().coerceAtLeast(0.dp)),
             beyondViewportPageCount = 0
         ) {
             page ->
@@ -101,7 +112,8 @@ fun MainScreen(
                         Modifier,
                         onNavigateToNotifications = onNavigateToNotifications,
                     )
-                    1 -> SettingsScreen()
+                    1 -> AnalyticsScreen()
+                    2 -> SettingsScreen()
                 }
             }
         }
