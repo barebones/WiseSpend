@@ -9,8 +9,8 @@ enum class AppThemeMode {
 }
 
 enum class AppColorScheme(val label: String) {
-    MONO("Mono"),
-    MONO2("Mono2"),
+//    MONO("Mono"),
+    MONO2("Mono"),
     OCEAN("Ocean"),
     FOREST("Forest"),
     SUNSET("Sunset"),
@@ -214,7 +214,7 @@ fun resolveColorScheme(
     val isAmoled = mode == AppThemeMode.AMOLED
 
     val colors = when (scheme) {
-        AppColorScheme.MONO -> if (isDark) MonoDark else MonoLight
+//        AppColorScheme.MONO -> if (isDark) MonoDark else MonoLight
         AppColorScheme.MONO2 -> if (isDark) MonoDark2 else MonoLight2
         AppColorScheme.OCEAN -> if (isDark) OceanDark else OceanLight
         AppColorScheme.FOREST -> if (isDark) ForestDark else ForestLight

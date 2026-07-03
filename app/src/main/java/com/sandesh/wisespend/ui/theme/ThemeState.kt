@@ -23,9 +23,9 @@ object ThemeState {
             AppThemeMode.SYSTEM
         }
         colorScheme.value = try {
-            AppColorScheme.valueOf(prefs.getString(KEY_SCHEME, AppColorScheme.MONO.name)!!)
+            AppColorScheme.valueOf(prefs.getString(KEY_SCHEME, AppColorScheme.MONO2.name)!!)
         } catch (_: Exception) {
-            AppColorScheme.MONO
+            AppColorScheme.MONO2
         }
     }
 

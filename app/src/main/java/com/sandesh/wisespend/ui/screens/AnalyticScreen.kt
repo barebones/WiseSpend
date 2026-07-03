@@ -20,9 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sandesh.wisespend.data.model.Expense
 import com.sandesh.wisespend.ui.components.AnalyticsWidgetContent
-import com.sandesh.wisespend.ui.components.RecentTransactionsWidget
 import com.sandesh.wisespend.viewmodel.ExpenseViewModel
-import com.sandesh.wisespend.ui.components.TransactionsMode
 
 
 @Composable
@@ -65,11 +63,12 @@ fun AnalyticsScreenContent(
 
             Spacer(modifier = Modifier.size(24.dp))
 
-            RecentTransactionsWidget(
-                mode = TransactionsMode.DAILY,
-                expenses = expenses,
-                modifier = Modifier
-            )
+//            TODO: Implement till next release
+//            RecentTransactionsWidget(
+//                mode = TransactionsMode.DAILY,
+//                expenses = expenses,
+//                modifier = Modifier
+//            )
         }
     }
 }
