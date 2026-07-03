@@ -10,14 +10,18 @@ Wise Spend is an Android app for tracking daily expenses and managing personal b
 - All data stored locally via Room database, nothing leaves the device.
 - Export/import your data as a local JSON file.
 
-## Screenshots
+<details>
+<summary><b> Screenshots </b> </summary>
 
-<div align="center">
+<div align="start">
   <img src=".github/screenshots/homepage.png" width="250" />
   <img src=".github/screenshots/analytics.png" width="250" />
+</div>
+<div align="start">
   <img src=".github/screenshots/add_expenses.png" width="250" />
   <img src=".github/screenshots/dark_light_settings.png" width="250" />
 </div>
+</details>
 
 ## Getting Started
 
