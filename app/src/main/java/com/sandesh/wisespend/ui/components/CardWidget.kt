@@ -60,6 +60,7 @@ fun CardWidget(
     modifier: Modifier = Modifier,
     budget: Double,
     spent: Double,
+    currencySymbol: String = "रू",
     onSetBudget: (Double) -> Unit
 ) {
 
@@ -67,11 +68,12 @@ fun CardWidget(
     var showBudgetDialog by remember { mutableStateOf(false) }
 
     val available = (budget - spent).coerceAtLeast(0.0)
-    val displayText = if (isBalanceVisible) "₹ ${"%.0f".format(available)}" else "₹ •••••"
+    val displayText = if (isBalanceVisible) "$currencySymbol ${"%.0f".format(available)}" else "$currencySymbol •••••"
 
     if (showBudgetDialog) {
         SetBudgetDialog(
             currentBudget = budget,
+            currencySymbol = currencySymbol,
             onDismiss = { showBudgetDialog = false },
             onConfirm = { newBudget ->
                 onSetBudget(newBudget)
@@ -147,10 +149,11 @@ fun CardWidget(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 BudgetProgress(
-                    spent.toFloat(),
-                    total = budget.toFloat(),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                spent.toFloat(),
+                total = budget.toFloat(),
+                currencySymbol = currencySymbol,
+                modifier = Modifier.fillMaxWidth()
+            )
             }
 
 
@@ -161,6 +164,7 @@ fun CardWidget(
 @Composable
 fun SetBudgetDialog(
     currentBudget: Double,
+    currencySymbol: String = "₹",
     onDismiss: () -> Unit,
     onConfirm: (Double) -> Unit
 ) {
@@ -198,7 +202,7 @@ fun SetBudgetDialog(
                         .padding(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "  ₹", color = TextGray, fontSize = 16.sp)
+                    Text(text = "  $currencySymbol", color = TextGray, fontSize = 16.sp)
                     TextField(
                         value = input,
                         onValueChange = { input = it },
@@ -257,6 +261,7 @@ fun SetBudgetDialog(
 fun BudgetProgress(
     spent: Float,
     total: Float,
+    currencySymbol: String = "₹",
     modifier: Modifier = Modifier
 ) {
     val progress = if (total > 0f) {
@@ -308,14 +313,14 @@ fun BudgetProgress(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "₹${spent.toInt()}",
+                text = "$currencySymbol${spent.toInt()}",
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFFE53935),
                 fontSize = 15.sp
             )
 
             Text(
-                text = "₹${total.toInt()}",
+                text = "$currencySymbol${total.toInt()}",
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF43A047),
                 fontSize = 15.sp

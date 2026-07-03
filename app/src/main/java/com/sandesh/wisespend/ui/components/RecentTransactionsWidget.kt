@@ -54,6 +54,7 @@ fun RecentTransactionsWidget(
     expenses: List<Expense>,
     mode: TransactionsMode = TransactionsMode.RECENT,
     filterInternally: Boolean = true,
+    currencySymbol: String = "$",
     modifier: Modifier = Modifier
 ) {
     val todayDateString = remember {
@@ -83,13 +84,14 @@ fun RecentTransactionsWidget(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
             )
-            if (expenses.isNotEmpty()) {
-                Text(
-                    text = "See all",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 13.sp
-                )
-            }
+//            TODO: add see all page to list all expenses with filters
+//            if (expenses.isNotEmpty()) {
+//                Text(
+//                    text = "See all",
+//                    color = MaterialTheme.colorScheme.primary,
+//                    fontSize = 13.sp
+//                )
+//            }
         }
 
         if (displayedExpenses.isEmpty()) {
@@ -100,7 +102,7 @@ fun RecentTransactionsWidget(
                     visible = true,
                     enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 })
                 ) {
-                    TransactionRow(mode = mode,expense = expense)
+                    TransactionRow(mode = mode, expense = expense, currencySymbol = currencySymbol)
                 }
             }
         }
@@ -110,7 +112,8 @@ fun RecentTransactionsWidget(
 @Composable
 private fun TransactionRow(
     mode: TransactionsMode,
-    expense: Expense
+    expense: Expense,
+    currencySymbol: String = "$"
 ) {
     val formatter = DateTimeFormatter.ofPattern("MMM dd")
     val displayDate = runCatching {
@@ -190,7 +193,7 @@ private fun TransactionRow(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "-$${"%.2f".format(expense.amount)}",
+                text = "-$currencySymbol${"%.2f".format(expense.amount)}",
                 color = MaterialTheme.colorScheme.error,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold

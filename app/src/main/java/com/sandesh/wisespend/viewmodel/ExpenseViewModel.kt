@@ -24,8 +24,10 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     val allExpenses: StateFlow<List<Expense>>
     val totalSpent: StateFlow<Double>
     val budget: StateFlow<Double>
+    val availableBalance: StateFlow<Double>
 
     val userName: StateFlow<String>
+    val currencyCode: StateFlow<String>
 
     val categories: StateFlow<List<ExpenseCategory>>
 
@@ -46,9 +48,21 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
             .map { it?.budget ?: 0.0 }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0.0)
 
+        availableBalance = combine(budget, totalSpent) { budget, spent ->
+            (budget - spent).coerceAtLeast(0.0)
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            0.0
+        )
+
         userName = repository.getSettings()
             .map { it?.userName ?: "User" }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "User")
+
+        currencyCode = repository.getSettings()
+            .map { it?.currencyCode ?: "NPR" }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "NPR")
 
         categories = repository.getCategories()
             .map { list ->
@@ -112,6 +126,17 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
                 repository.updateUsername(name)
             } else {
                 repository.upsert(UserSettings(userName = name))
+            }
+        }
+    }
+
+    fun setCurrencyCode(code: String) {
+        viewModelScope.launch {
+            val current = repository.getSettings().first()
+            if (current != null) {
+                repository.updateCurrencyCode(code)
+            } else {
+                repository.upsert(UserSettings(currencyCode = code))
             }
         }
     }

@@ -29,7 +29,8 @@ import com.sandesh.wisespend.util.AnalyticsRange
 @Composable
 fun AnalyticsWidgetContent(
     modifier: Modifier = Modifier,
-    expenses: List<Expense>
+    expenses: List<Expense>,
+    currencySymbol: String = "रू"
 ) {
     var selectedRange by remember { mutableStateOf(AnalyticsRange.WEEK) }
     var manuallySelectedIndex by remember { mutableIntStateOf(-1) }
@@ -119,12 +120,12 @@ fun AnalyticsWidgetContent(
                     .padding(top = 10.dp)
             ) {
                 Text(
-                    text = "Total ₹${"%.0f".format(analytics.total)}",
+                    text = "Total $currencySymbol ${"%.0f".format(analytics.total)}",
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "  •  Avg ₹${"%.0f".format(analytics.average)}",
+                    text = "  •  Avg $currencySymbol ${"%.0f".format(analytics.average)}",
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -134,6 +135,7 @@ fun AnalyticsWidgetContent(
                 modifier = Modifier.padding(top = 12.dp),
                 data = analytics.points,
                 selectedIndex = selectedIndex,
+                currencySymbol = currencySymbol,
                 onBarSelected = { manuallySelectedIndex = it }
             )
         }

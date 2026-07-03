@@ -31,6 +31,7 @@ import com.sandesh.wisespend.ui.components.CardWidget
 import com.sandesh.wisespend.ui.components.GreetingHeader
 import com.sandesh.wisespend.ui.components.RecentTransactionsWidget
 import com.sandesh.wisespend.ui.theme.WiseSpendTheme
+import com.sandesh.wisespend.util.CurrencyUtils
 import com.sandesh.wisespend.viewmodel.ExpenseViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,6 +48,7 @@ fun HomeScreen(
     val budget by expenseViewModel.budget.collectAsStateWithLifecycle()
     val userName by expenseViewModel.userName.collectAsStateWithLifecycle()
     val totalSpent by expenseViewModel.totalSpent.collectAsStateWithLifecycle()
+    val currencyCode by expenseViewModel.currencyCode.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = modifier,
@@ -104,14 +106,17 @@ fun HomeScreen(
                 .verticalScroll(scrollState)
                 .padding(horizontal = 16.dp)
         ) {
+            val currencySymbol = CurrencyUtils.getCurrencyByCode(currencyCode).symbol
             CardWidget(
                 budget = budget,
                 spent = totalSpent,
+                currencySymbol = currencySymbol,
                 onSetBudget = { expenseViewModel.setBudget(it) }
             )
             Spacer(modifier = Modifier.size(24.dp))
             RecentTransactionsWidget(
-                expenses = recentExpenses
+                expenses = recentExpenses,
+                currencySymbol = currencySymbol
             )
 
             Spacer(modifier = Modifier.size(16.dp))

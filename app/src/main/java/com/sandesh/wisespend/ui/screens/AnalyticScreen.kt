@@ -11,6 +11,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -29,13 +30,21 @@ fun AnalyticsScreen(
     expenseViewModel: ExpenseViewModel = viewModel()
 ) {
     val expenses by expenseViewModel.allExpenses.collectAsStateWithLifecycle(initialValue = emptyList())
-    AnalyticsScreenContent(modifier = modifier, expenses = expenses)
+    val currencyCode by expenseViewModel.currencyCode.collectAsStateWithLifecycle()
+    val currency = remember(currencyCode) { com.sandesh.wisespend.util.CurrencyUtils.getCurrencyByCode(currencyCode) }
+
+    AnalyticsScreenContent(
+        modifier = modifier,
+        expenses = expenses,
+        currencySymbol = currency.symbol
+    )
 }
 
 @Composable
 fun AnalyticsScreenContent(
     modifier: Modifier = Modifier,
-    expenses: List<Expense>
+    expenses: List<Expense>,
+    currencySymbol: String = "रू"
 ) {
     Scaffold(
         modifier = modifier,
@@ -59,7 +68,10 @@ fun AnalyticsScreenContent(
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp)
         ) {
-            AnalyticsWidgetContent(expenses = expenses)
+            AnalyticsWidgetContent(
+                expenses = expenses,
+                currencySymbol = currencySymbol
+            )
 
             Spacer(modifier = Modifier.size(24.dp))
 

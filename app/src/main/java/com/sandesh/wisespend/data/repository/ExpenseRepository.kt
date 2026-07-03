@@ -34,6 +34,8 @@ class ExpenseRepository(
     suspend fun setBudget(amount: Double)       = settingsDao.upsert(UserSettings(budget = amount))
 
     suspend fun updateUsername(name: String) = settingsDao.updateUsername(name)
-    
+
+    suspend fun updateCurrencyCode(code: String) = settingsDao.updateCurrencyCode(code)
+
     suspend fun upsert(settings: UserSettings) = settingsDao.upsert(settings)
 }

@@ -40,6 +40,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.flagkit.android)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

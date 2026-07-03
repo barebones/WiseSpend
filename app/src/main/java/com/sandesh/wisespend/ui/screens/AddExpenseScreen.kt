@@ -90,6 +90,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.Clapperboard
+import com.composables.icons.lucide.HandCoins
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.ShoppingCart
 import com.composables.icons.lucide.UtensilsCrossed
@@ -107,7 +108,7 @@ val defaultCategories = listOf(
     ExpenseCategory("Grocery", Lucide.ShoppingCart),
     ExpenseCategory("Food", Lucide.UtensilsCrossed),
     ExpenseCategory("Entertainment", Lucide.Clapperboard),
-    ExpenseCategory("Borrow/Lend", Icons.Default.Add),
+    ExpenseCategory("Borrow/Lend", Lucide.HandCoins),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,9 +117,12 @@ fun AddExpenseScreen(
     onBack: () -> Unit, expenseViewModel: ExpenseViewModel = viewModel()
 ) {
     val vmCategories by expenseViewModel.categories.collectAsStateWithLifecycle()
+    val currencyCode by expenseViewModel.currencyCode.collectAsStateWithLifecycle()
+    val currency = remember(currencyCode) { com.sandesh.wisespend.util.CurrencyUtils.getCurrencyByCode(currencyCode) }
 
     AddExpenseContent(
         vmCategories = vmCategories,
+        currencySymbol = currency.symbol,
         onBack = onBack,
         onSaveExpense = { title, amount, categoryName, date ->
             expenseViewModel.addExpense(title, amount, categoryName, date)
@@ -134,6 +138,7 @@ fun AddExpenseScreen(
 @Composable
 fun AddExpenseContent(
     vmCategories: List<ExpenseCategory>,
+    currencySymbol: String = "रू",
     onBack: () -> Unit,
     onSaveExpense: (String, Double, String, LocalDate) -> Unit,
     onCategoryAdded: (ExpenseCategory) -> Unit,
@@ -216,7 +221,11 @@ fun AddExpenseContent(
                 onValueChange = { expenseTitle = it })
 
             CustomInputField(
-                label = "Amount", value = amount, onValueChange = { amount = it }, isAmount = true
+                label = "Amount",
+                value = amount,
+                onValueChange = { amount = it },
+                isAmount = true,
+                currencySymbol = currencySymbol
             )
 
             ExpenseCategorySection(
@@ -238,7 +247,11 @@ fun AddExpenseContent(
 
 @Composable
 fun CustomInputField(
-    label: String, value: String, onValueChange: (String) -> Unit, isAmount: Boolean = false
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    isAmount: Boolean = false,
+    currencySymbol: String = "$"
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
@@ -263,7 +276,7 @@ fun CustomInputField(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             if (isAmount) {
-                Text(text = "$", color = TextGray, fontSize = 16.sp)
+                Text(text = "  $currencySymbol", color = TextGray, fontSize = 16.sp)
             }
 
             TextField(

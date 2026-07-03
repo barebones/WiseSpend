@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -50,23 +49,65 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Moon
 import com.composables.icons.lucide.Palette
+import com.composables.icons.lucide.Settings
 import com.sandesh.wisespend.BuildConfig
 import com.sandesh.wisespend.R
+import com.sandesh.wisespend.ui.components.CurrencyPicker
 import com.sandesh.wisespend.ui.components.ExpandableCard
 import com.sandesh.wisespend.ui.theme.AppColorScheme
 import com.sandesh.wisespend.ui.theme.AppThemeMode
 import com.sandesh.wisespend.ui.theme.ThemeState
 import com.sandesh.wisespend.ui.theme.WiseSpendTheme
+import com.sandesh.wisespend.util.CurrencyUtils
+import com.sandesh.wisespend.viewmodel.ExpenseViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    modifier: Modifier = Modifier,
+    expenseViewModel: ExpenseViewModel = viewModel()
+) {
     val context = LocalContext.current
+    val availableBalance by expenseViewModel.availableBalance.collectAsStateWithLifecycle()
+    val currencyCode by expenseViewModel.currencyCode.collectAsStateWithLifecycle()
 
     val currentMode = ThemeState.themeMode.value
     val currentScheme = ThemeState.colorScheme.value
+
+    SettingsScreenContent(
+        modifier = modifier,
+        budget = availableBalance,
+        currencyCode = currencyCode,
+        currentMode = currentMode,
+        currentScheme = currentScheme,
+        onModeChange = { mode -> ThemeState.setMode(context, mode) },
+        onSchemeChange = { scheme -> ThemeState.setScheme(context, scheme) },
+        onCurrencyChange = { code -> expenseViewModel.setCurrencyCode(code) }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreenContent(
+    modifier: Modifier = Modifier,
+    budget: Double,
+    currencyCode: String,
+    currentMode: AppThemeMode,
+    currentScheme: AppColorScheme,
+    onModeChange: (AppThemeMode) -> Unit,
+    onSchemeChange: (AppColorScheme) -> Unit,
+    onCurrencyChange: (String) -> Unit
+) {
+    val context = LocalContext.current
+
+    val selectedCurrency = remember(currencyCode) {
+        CurrencyUtils.getCurrencyByCode(currencyCode)
+    }
 
     Scaffold(
         modifier = modifier, topBar = {
@@ -87,11 +128,44 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 .background(Color.Transparent, shape = RoundedCornerShape(20.dp)),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
         ) {
+            item(key = "general") {
+                ExpandableCard(
+                    header = {
+                        SectionHeader(
+                            icon = Lucide.Settings, title = "General"
+                        )
+                    }) {
+                    SettingsCard {
+                        Column {
+                            Text(
+                                text = "Currency",
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+
+                            CurrencyPicker(
+                                selected = selectedCurrency,
+                                onSelected = {
+                                    onCurrencyChange(it.code)
+                                },
+                                budget = budget
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+
+            item(key = "general_spacer") {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             item(key = "appearance") {
                 ExpandableCard(
                     header = {
                         SectionHeader(
-                            icon = Icons.Outlined.DarkMode, title = "Appearance"
+                            icon = Lucide.Moon, title = "Appearance"
                         )
                     }) {
                     SettingsCard {
@@ -117,7 +191,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                                             AppThemeMode.SYSTEM -> "Auto"
                                         },
                                         selected = currentMode == mode,
-                                        onClick = { ThemeState.setMode(context, mode) },
+                                        onClick = { onModeChange(mode) },
                                         modifier = Modifier.weight(1f)
                                     )
                                 }
@@ -142,7 +216,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                                     ColorDot(
                                         scheme = scheme,
                                         selected = currentScheme == scheme,
-                                        onClick = { ThemeState.setScheme(context, scheme) })
+                                        onClick = { onSchemeChange(scheme) })
                                 }
                             }
 
@@ -365,6 +439,14 @@ private fun InfoRow(
 @Composable
 fun SettingsScreenPreview() {
     WiseSpendTheme {
-        SettingsScreen()
+        SettingsScreenContent(
+            budget = 1000.0,
+            currencyCode = "USD",
+            currentMode = AppThemeMode.SYSTEM,
+            currentScheme = AppColorScheme.MONO2,
+            onModeChange = {},
+            onSchemeChange = {},
+            onCurrencyChange = {}
+        )
     }
 }

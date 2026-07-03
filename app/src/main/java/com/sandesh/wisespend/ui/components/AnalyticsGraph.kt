@@ -52,6 +52,7 @@ fun AnalyticsGraph(
     modifier: Modifier = Modifier,
     data: List<DayValue>,
     selectedIndex: Int,
+    currencySymbol: String = "रू",
     onBarSelected: (Int) -> Unit
 ) {
     if (data.isEmpty()) {
@@ -147,7 +148,7 @@ fun AnalyticsGraph(
                     ) {
                         if (index == safeIndex) {
                             Box(modifier = Modifier.wrapContentWidth(unbounded = true)) {
-                                TooltipBubble(spent = "₹ ${selected.value}")
+                                TooltipBubble(spent = "$currencySymbol ${selected.value}")
                             }
                         }
                     }
