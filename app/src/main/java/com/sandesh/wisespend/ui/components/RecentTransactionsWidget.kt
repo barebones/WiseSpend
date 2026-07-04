@@ -122,9 +122,14 @@ private fun TransactionRow(
 
     val timeFormatter = DateTimeFormatter.ofPattern("hh:mm a")
     val displayTime = runCatching {
-        val instant = Instant.ofEpochMilli(expense.createdAt)
-        val dateTime = instant.atZone(ZoneId.systemDefault())
-        dateTime.format(timeFormatter)
+        if (expense.time != null) {
+            val localTime = java.time.LocalTime.parse(expense.time)
+            localTime.format(timeFormatter)
+        } else {
+            val instant = Instant.ofEpochMilli(expense.createdAt)
+            val dateTime = instant.atZone(ZoneId.systemDefault())
+            dateTime.format(timeFormatter)
+        }
     }.getOrDefault("Invalid Time")
 
     Row(
@@ -236,21 +241,24 @@ fun RecentTransactionsWidgetPreview() {
             title = "Grocery Shopping",
             amount = 45.50,
             categoryName = "Grocery",
-            date = "2023-10-27"
+            date = "2023-10-27",
+            time = "10:30"
         ),
         Expense(
             id = 2,
             title = "Netflix Subscription",
             amount = 15.99,
             categoryName = "Entertainment",
-            date = "2023-10-26"
+            date = "2023-10-26",
+            time = "20:00"
         ),
         Expense(
             id = 3,
             title = "Lunch at Cafe",
             amount = 22.00,
             categoryName = "Food",
-            date = "2023-10-25"
+            date = "2023-10-25",
+            time = "13:15"
         )
     )
     WiseSpendTheme {

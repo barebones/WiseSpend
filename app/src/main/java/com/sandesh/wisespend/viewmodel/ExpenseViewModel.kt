@@ -87,10 +87,16 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun addExpense(title: String, amount: Double, categoryName: String, date: LocalDate) {
+    fun addExpense(title: String, amount: Double, categoryName: String, date: LocalDate, time: String) {
         viewModelScope.launch {
             repository.insertExpense(
-                Expense(title = title, amount = amount, categoryName = categoryName, date = date.toString())
+                Expense(
+                    title = title,
+                    amount = amount,
+                    categoryName = categoryName,
+                    date = date.toString(),
+                    time = time
+                )
             )
         }
     }

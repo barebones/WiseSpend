@@ -10,5 +10,6 @@ data class Expense(
     val amount: Double,
     val categoryName: String,
     val date: String,          // stored as "yyyy-MM-dd"
+    val time: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

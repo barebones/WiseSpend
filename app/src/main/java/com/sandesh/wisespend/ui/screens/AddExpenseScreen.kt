@@ -96,9 +96,15 @@ import com.composables.icons.lucide.ShoppingCart
 import com.composables.icons.lucide.UtensilsCrossed
 import com.composables.icons.lucide.X
 import com.sandesh.wisespend.ui.components.CalendarWidget
+import com.sandesh.wisespend.ui.components.WiseTimePickerDialog
 import com.sandesh.wisespend.ui.theme.WiseSpendTheme
+import com.sandesh.wisespend.util.CurrencyUtils
 import com.sandesh.wisespend.viewmodel.ExpenseViewModel
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 val TextGray = Color(0xFF7E8A97)
 
@@ -118,14 +124,14 @@ fun AddExpenseScreen(
 ) {
     val vmCategories by expenseViewModel.categories.collectAsStateWithLifecycle()
     val currencyCode by expenseViewModel.currencyCode.collectAsStateWithLifecycle()
-    val currency = remember(currencyCode) { com.sandesh.wisespend.util.CurrencyUtils.getCurrencyByCode(currencyCode) }
+    val currency = remember(currencyCode) { CurrencyUtils.getCurrencyByCode(currencyCode) }
 
     AddExpenseContent(
         vmCategories = vmCategories,
         currencySymbol = currency.symbol,
         onBack = onBack,
-        onSaveExpense = { title, amount, categoryName, date ->
-            expenseViewModel.addExpense(title, amount, categoryName, date)
+        onSaveExpense = { title, amount, categoryName, date, time ->
+            expenseViewModel.addExpense(title, amount, categoryName, date, time)
             onBack()
         },
         onCategoryAdded = { expenseViewModel.addCategory(it) },
@@ -140,7 +146,7 @@ fun AddExpenseContent(
     vmCategories: List<ExpenseCategory>,
     currencySymbol: String = "रू",
     onBack: () -> Unit,
-    onSaveExpense: (String, Double, String, LocalDate) -> Unit,
+    onSaveExpense: (String, Double, String, LocalDate, String) -> Unit,
     onCategoryAdded: (ExpenseCategory) -> Unit,
     onCategoryDeleted: (ExpenseCategory) -> Unit
 ) {
@@ -148,7 +154,13 @@ fun AddExpenseContent(
     var amount by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<ExpenseCategory?>(null) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
-    var categories by remember { mutableStateOf(defaultCategories) }
+
+    val currentDateTime = LocalDateTime.now()
+    val formatter = DateTimeFormatter.ofPattern("HH:mm")
+    val formattedTime = currentDateTime.format(formatter)
+    
+    var showTimePicker by remember { mutableStateOf(true) }
+    var selectedTime by remember { mutableStateOf(formattedTime) }
 
     Scaffold(
         modifier = Modifier.background(MaterialTheme.colorScheme.background), topBar = {
@@ -179,7 +191,7 @@ fun AddExpenseContent(
                 val parsedAmount = amount.toDoubleOrNull()
                 if (expenseTitle.isNotBlank() && parsedAmount != null && selectedCategory != null) {
                     onSaveExpense(
-                        expenseTitle.trim(), parsedAmount, selectedCategory!!.name, selectedDate
+                        expenseTitle.trim(), parsedAmount, selectedCategory!!.name, selectedDate, selectedTime
                     )
                 }
             },
@@ -227,6 +239,46 @@ fun AddExpenseContent(
                 isAmount = true,
                 currencySymbol = currencySymbol
             )
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ){
+                Button(
+                    onClick = {showTimePicker = true}
+                ) {
+                    Text(text = "Set time")
+                }
+
+                val displayTime = remember(selectedTime) {
+                    runCatching {
+                        LocalTime.parse(selectedTime).format(DateTimeFormatter.ofPattern("hh:mm a"))
+                    }.getOrDefault(selectedTime)
+                }
+
+                Text(
+                    text = displayTime,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            if (showTimePicker) {
+                WiseTimePickerDialog(
+                    onConfirm = { timePickerState ->
+                        val hour = timePickerState.hour
+                        val minute = timePickerState.minute
+
+                        selectedTime = String.format(Locale.getDefault(),"%02d:%02d", hour, minute)
+
+                        showTimePicker = false
+                    },
+                    onDismiss = {
+                        showTimePicker = false
+                    }
+                )
+            }
 
             ExpenseCategorySection(
                 categories = vmCategories,
@@ -690,7 +742,7 @@ fun AddExpenseScreenPreview() {
     )
     WiseSpendTheme {
         AddExpenseContent(
-            onBack = { }, onSaveExpense = { _, _, _, _ -> },
+            onBack = { }, onSaveExpense = { _, _, _, _, _ -> },
             vmCategories =defaultCategories,
             onCategoryAdded = {},
             onCategoryDeleted = {}

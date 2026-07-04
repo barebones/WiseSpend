@@ -94,14 +94,16 @@ fun AnalyticsScreenPreview() {
             title = "Grocery Shopping",
             amount = 45.50,
             categoryName = "Grocery",
-            date = "2026-7-1"
+            date = "2026-7-1",
+            time = "10:30"
         ),
         Expense(
             id = 2,
             title = "Movie tickets",
             amount = 9.99,
             categoryName = "Entertainment",
-            date = "2026-7-1"
+            date = "2026-7-1",
+            time = "18:45"
         ),
 
     )
