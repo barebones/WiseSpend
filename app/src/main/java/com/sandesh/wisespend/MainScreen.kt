@@ -6,11 +6,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,14 +26,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sandesh.wisespend.ui.components.WiseNavigationBar
 import com.sandesh.wisespend.ui.screens.AnalyticsScreen
+import com.sandesh.wisespend.ui.screens.AnalyticsScreenContent
 import com.sandesh.wisespend.ui.screens.HomeScreen
+import com.sandesh.wisespend.ui.screens.HomeScreenContent
 import com.sandesh.wisespend.ui.screens.SettingsScreen
+import com.sandesh.wisespend.ui.screens.SettingsScreenContent
+import com.sandesh.wisespend.ui.theme.AppColorScheme
+import com.sandesh.wisespend.ui.theme.AppThemeMode
 import com.sandesh.wisespend.ui.theme.WiseSpendTheme
 import kotlinx.coroutines.launch
 
@@ -42,7 +51,7 @@ data class NavItems(
 
 @Composable
 fun MainScreen(
-    onNavigateToAddExpense:() -> Unit,
+    onNavigateToAddExpense: () -> Unit,
     onNavigateToNotifications: () -> Unit
 ) {
     val navItems = listOf(
@@ -51,7 +60,23 @@ fun MainScreen(
         NavItems("Settings", Icons.Default.Settings),
     )
 
-    val pagerState = rememberPagerState{ navItems.size }
+    val pagerState = rememberPagerState { navItems.size }
+    
+    MainScreenContent(
+        navItems = navItems,
+        pagerState = pagerState,
+        onNavigateToAddExpense = onNavigateToAddExpense,
+        onNavigateToNotifications = onNavigateToNotifications
+    )
+}
+
+@Composable
+fun MainScreenContent(
+    navItems: List<NavItems>,
+    pagerState: PagerState,
+    onNavigateToAddExpense: () -> Unit,
+    onNavigateToNotifications: () -> Unit
+) {
     val scope = rememberCoroutineScope()
 
     BackHandler(enabled = pagerState.currentPage != 0) {
@@ -60,28 +85,75 @@ fun MainScreen(
         }
     }
 
-
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        bottomBar = {
-            WiseNavigationBar(
-                items = navItems,
-                pagePosition = pagerState.currentPage + pagerState.currentPageOffsetFraction,
-                onSelect = { idx ->
-                    scope.launch { pagerState.animateScrollToPage(idx) }
-
-                },
-                modifier = Modifier.navigationBarsPadding()
-            )
-        },
-        floatingActionButton = {
-            // Check if the user is on the home page or actively swiping away from/to it
+    ) { innerPadding ->
+        Box(
+            Modifier.fillMaxSize()
+        ) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = innerPadding.calculateBottomPadding().coerceAtLeast(0.dp)),
+                beyondViewportPageCount = 0
+            ) { page ->
+                when (page) {
+                    0 -> {
+                        if (LocalInspectionMode.current) {
+                            HomeScreenContent(
+                                onNavigateToNotifications = onNavigateToNotifications,
+                                recentExpenses = emptyList(),
+                                budget = 1000.0,
+                                userName = "Sandesh",
+                                totalSpent = 250.0,
+                                currencyCode = "NPR",
+                                onSetUsername = {},
+                                onSetBudget = {}
+                            )
+                        } else {
+                            HomeScreen(
+                                modifier = Modifier,
+                                onNavigateToNotifications = onNavigateToNotifications,
+                            )
+                        }
+                    }
+                    1 -> {
+                        if (LocalInspectionMode.current) {
+                            AnalyticsScreenContent(
+                                expenses = emptyList(),
+                                currencySymbol = "रू"
+                            )
+                        } else {
+                            AnalyticsScreen()
+                        }
+                    }
+                    2 -> {
+                        if (LocalInspectionMode.current) {
+                            SettingsScreenContent(
+                                budget = 1000.0,
+                                currencyCode = "NPR",
+                                currentMode = AppThemeMode.SYSTEM,
+                                currentScheme = AppColorScheme.MONO2,
+                                onModeChange = {},
+                                onSchemeChange = {},
+                                onCurrencyChange = {}
+                            )
+                        } else {
+                            SettingsScreen()
+                        }
+                    }
+                }
+            }
             val isHomeVisible = pagerState.currentPage == 0
-
             AnimatedVisibility(
                 visible = isHomeVisible,
                 enter = fadeIn() + scaleIn(initialScale = 0.8f),
-                exit = fadeOut() + scaleOut(targetScale = 0.8f)
+                exit = fadeOut() + scaleOut(targetScale = 0.8f),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 20.dp, bottom = 110.dp)
+                    .navigationBarsPadding()
             ) {
                 FloatingActionButton(
                     onClick = onNavigateToAddExpense,
@@ -96,35 +168,35 @@ fun MainScreen(
                     )
                 }
             }
-        }
-    ) { innerPadding ->
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = innerPadding.calculateBottomPadding().coerceAtLeast(0.dp)),
-            beyondViewportPageCount = 0
-        ) {
-            page ->
-            run {
-                when (page) {
-                    0 -> HomeScreen(
-                        Modifier,
-                        onNavigateToNotifications = onNavigateToNotifications,
-                    )
-                    1 -> AnalyticsScreen()
-                    2 -> SettingsScreen()
-                }
-            }
+            WiseNavigationBar(
+                items = navItems,
+                pagePosition = pagerState.currentPage + pagerState.currentPageOffsetFraction,
+                onSelect = { idx ->
+                    scope.launch { pagerState.animateScrollToPage(idx) }
+                },
+                modifier = Modifier.align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+            )
         }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun MainScreenPreview(){
+fun MainScreenPreview() {
+    val navItems = listOf(
+        NavItems("Home", Icons.Default.Home),
+        NavItems("Analytics", Icons.Default.BarChart),
+        NavItems("Settings", Icons.Default.Settings),
+    )
+    val pagerState = rememberPagerState { navItems.size }
+
     WiseSpendTheme {
-        MainScreen({},{})
+        MainScreenContent(
+            navItems = navItems,
+            pagerState = pagerState,
+            onNavigateToAddExpense = {},
+            onNavigateToNotifications = {}
+        )
     }
 }
-

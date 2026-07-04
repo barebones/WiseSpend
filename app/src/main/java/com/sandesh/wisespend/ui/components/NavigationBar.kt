@@ -57,7 +57,6 @@ fun WiseNavigationBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
             .padding(horizontal = 20.dp, vertical = 12.dp),
         contentAlignment = Alignment.BottomCenter
     ) {

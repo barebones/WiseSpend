@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -114,11 +114,12 @@ fun AnalyticsGraph(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 data.forEachIndexed { index, day ->
+                    val showLabel = data.size <= 12 || index % 4 == 0 || index == safeIndex || index == data.lastIndex
                     Text(
-                        text = day.label,
+                        text = if (showLabel) day.label else "",
                         modifier = Modifier.weight(1f),
                         textAlign = TextAlign.Center,
-                        fontSize = 13.sp,
+                        fontSize = 11.sp,
                         fontWeight = if (index == safeIndex) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (index == safeIndex)
                             MaterialTheme.colorScheme.onSurface
@@ -181,7 +182,8 @@ private fun BarItem(
         if (isSelected) {
             Box(
                 modifier = Modifier
-                    .width(40.dp)
+                    .widthIn(min = 8.dp, max = 40.dp)
+                    .fillMaxWidth(0.9f)
                     .height(animatedHeight)
                     .clip(RoundedCornerShape(38))
                     .background(MaterialTheme.colorScheme.primary)
@@ -194,7 +196,8 @@ private fun BarItem(
         } else {
             StripedPill(
                 modifier = Modifier
-                    .width(34.dp)
+                    .widthIn(min = 6.dp, max = 34.dp)
+                    .fillMaxWidth(0.8f)
                     .height(animatedHeight)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },

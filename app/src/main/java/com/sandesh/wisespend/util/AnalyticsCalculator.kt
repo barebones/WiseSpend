@@ -29,11 +29,32 @@ object AnalyticsCalculator {
 
     fun compute(expenses: List<Expense>, range: AnalyticsRange): AnalyticsResult {
         return when (range) {
-            AnalyticsRange.DAY -> computeLastNDays(expenses, days = 7)
+            AnalyticsRange.DAY -> computeCurrentDayByHour(expenses)
             AnalyticsRange.WEEK -> computeCurrentWeek(expenses)
             AnalyticsRange.MONTH -> computeCurrentMonthByWeek(expenses)
             AnalyticsRange.YEAR -> computeCurrentYearByMonth(expenses)
         }
+    }
+
+    // Hourly spending for the current day
+    private fun computeCurrentDayByHour(expenses: List<Expense>): AnalyticsResult {
+        val today = LocalDate.now()
+        val hours = (0..23).toList()
+
+        val sums = hours.associateWith { hour ->
+            expenses.filter {
+                it.date.toLocalDate() == today &&
+                        it.time?.substringBefore(":")?.toIntOrNull() == hour
+            }.sumOf { it.amount }
+        }
+
+        val currentHour = java.time.LocalTime.now().hour
+
+        return buildResult(
+            labels = hours.map { String.format(Locale.getDefault(), "%02d", it) },
+            values = hours.map { sums[it] ?: 0.0 },
+            selectedIndex = hours.indexOf(currentHour).coerceAtLeast(0)
+        )
     }
 
     // Last 7 calendar days, one bar per day "labeled by weekday initial"

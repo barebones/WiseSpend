@@ -159,7 +159,7 @@ fun AddExpenseContent(
     val formatter = DateTimeFormatter.ofPattern("HH:mm")
     val formattedTime = currentDateTime.format(formatter)
     
-    var showTimePicker by remember { mutableStateOf(true) }
+    var showTimePicker by remember { mutableStateOf(false) }
     var selectedTime by remember { mutableStateOf(formattedTime) }
 
     Scaffold(

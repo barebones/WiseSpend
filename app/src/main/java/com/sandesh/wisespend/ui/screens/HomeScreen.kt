@@ -27,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.lucide.Bell
 import com.composables.icons.lucide.Lucide
+import com.sandesh.wisespend.data.model.Expense
 import com.sandesh.wisespend.ui.components.CardWidget
 import com.sandesh.wisespend.ui.components.GreetingHeader
 import com.sandesh.wisespend.ui.components.RecentTransactionsWidget
@@ -34,29 +35,54 @@ import com.sandesh.wisespend.ui.theme.WiseSpendTheme
 import com.sandesh.wisespend.util.CurrencyUtils
 import com.sandesh.wisespend.viewmodel.ExpenseViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     onNavigateToNotifications:() -> Unit,
     expenseViewModel: ExpenseViewModel = viewModel()
-    ) {
-
-    val scrollState = rememberScrollState()
-
+) {
     val recentExpenses by expenseViewModel.recentExpenses.collectAsStateWithLifecycle()
     val budget by expenseViewModel.budget.collectAsStateWithLifecycle()
     val userName by expenseViewModel.userName.collectAsStateWithLifecycle()
     val totalSpent by expenseViewModel.totalSpent.collectAsStateWithLifecycle()
     val currencyCode by expenseViewModel.currencyCode.collectAsStateWithLifecycle()
 
+    HomeScreenContent(
+        modifier = modifier,
+        onNavigateToNotifications = onNavigateToNotifications,
+        recentExpenses = recentExpenses,
+        budget = budget,
+        userName = userName,
+        totalSpent = totalSpent,
+        currencyCode = currencyCode,
+        onSetUsername = { expenseViewModel.setUsername(it) },
+        onSetBudget = { expenseViewModel.setBudget(it) }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreenContent(
+    modifier: Modifier = Modifier,
+    onNavigateToNotifications: () -> Unit,
+    recentExpenses: List<Expense>,
+    budget: Double,
+    userName: String,
+    totalSpent: Double,
+    currencyCode: String,
+    onSetUsername: (String) -> Unit,
+    onSetBudget: (Double) -> Unit
+) {
+    val scrollState = rememberScrollState()
+
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { GreetingHeader(userName, Modifier) {
-                    expenseViewModel.setUsername(it)
-                }
+                title = { 
+                    GreetingHeader(userName, Modifier) {
+                        onSetUsername(it)
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
@@ -78,24 +104,6 @@ fun HomeScreen(
                         )
                     }
                 }
-                // will implement in future
-//                actions = {
-//                    IconButton(
-//                        onClick = {
-//                            // scan the image to get bill info
-//                        },
-//                        modifier = Modifier
-//                            .clip(CircleShape)
-//                            .background(MaterialTheme.colorScheme.surface)
-//                    ) {
-//                        Icon(
-//                            imageVector = Lucide.ScanLine,
-//                            contentDescription = "Scan Bill/Barcode",
-//                            tint = MaterialTheme.colorScheme.primary,
-//                            modifier = Modifier.size(22.dp)
-//                        )
-//                    }
-//                }
             )
         }
     ) { innerPadding ->
@@ -111,7 +119,7 @@ fun HomeScreen(
                 budget = budget,
                 spent = totalSpent,
                 currencySymbol = currencySymbol,
-                onSetBudget = { expenseViewModel.setBudget(it) }
+                onSetBudget = { onSetBudget(it) }
             )
             Spacer(modifier = Modifier.size(24.dp))
             RecentTransactionsWidget(
@@ -128,9 +136,15 @@ fun HomeScreen(
 @Composable
 fun HomeScreenPreview() {
     WiseSpendTheme {
-        HomeScreen(
-            Modifier,
-            {}
+        HomeScreenContent(
+            onNavigateToNotifications = {},
+            recentExpenses = emptyList(),
+            budget = 1000.0,
+            userName = "Sandesh",
+            totalSpent = 250.0,
+            currencyCode = "NPR",
+            onSetUsername = {},
+            onSetBudget = {}
         )
     }
 }
