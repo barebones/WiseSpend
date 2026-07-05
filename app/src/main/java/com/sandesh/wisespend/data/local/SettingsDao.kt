@@ -13,6 +13,9 @@ interface SettingsDao {
     @Query("SELECT * FROM user_settings WHERE id = 1")
     fun getSettings(): Flow<UserSettings?>
 
+    @Query("SELECT * FROM user_settings WHERE id = 1")
+    suspend fun getSettingsSync(): UserSettings?
+
     @Query("UPDATE user_settings SET userName = :name Where id = 1")
     suspend fun updateUsername(name: String)
 

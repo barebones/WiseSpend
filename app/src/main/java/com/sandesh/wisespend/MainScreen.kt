@@ -24,7 +24,10 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,10 +64,12 @@ fun MainScreen(
     )
 
     val pagerState = rememberPagerState { navItems.size }
+    val snackbarHostState = remember { SnackbarHostState() }
     
     MainScreenContent(
         navItems = navItems,
         pagerState = pagerState,
+        snackbarHostState = snackbarHostState,
         onNavigateToAddExpense = onNavigateToAddExpense,
         onNavigateToNotifications = onNavigateToNotifications
     )
@@ -74,6 +79,7 @@ fun MainScreen(
 fun MainScreenContent(
     navItems: List<NavItems>,
     pagerState: PagerState,
+    snackbarHostState: SnackbarHostState,
     onNavigateToAddExpense: () -> Unit,
     onNavigateToNotifications: () -> Unit
 ) {
@@ -87,15 +93,25 @@ fun MainScreenContent(
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        bottomBar = {
+            WiseNavigationBar(
+                items = navItems,
+                pagePosition = pagerState.currentPage + pagerState.currentPageOffsetFraction,
+                onSelect = { idx ->
+                    scope.launch { pagerState.animateScrollToPage(idx) }
+                },
+                modifier = Modifier.navigationBarsPadding()
+            )
+        }
     ) { innerPadding ->
         Box(
             Modifier.fillMaxSize()
+                .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = innerPadding.calculateBottomPadding().coerceAtLeast(0.dp)),
+                modifier = Modifier.fillMaxSize(),
                 beyondViewportPageCount = 0
             ) { page ->
                 when (page) {
@@ -109,12 +125,17 @@ fun MainScreenContent(
                                 totalSpent = 250.0,
                                 currencyCode = "NPR",
                                 onSetUsername = {},
-                                onSetBudget = {}
+                                onSetBudget = {},
+                                onDeleteExpense = {},
+                                onUndoDelete = {},
+                                snackbarHostState = snackbarHostState,
+                                scope = scope
                             )
                         } else {
                             HomeScreen(
                                 modifier = Modifier,
                                 onNavigateToNotifications = onNavigateToNotifications,
+                                snackbarHostState = snackbarHostState
                             )
                         }
                     }
@@ -137,7 +158,9 @@ fun MainScreenContent(
                                 currentScheme = AppColorScheme.MONO2,
                                 onModeChange = {},
                                 onSchemeChange = {},
-                                onCurrencyChange = {}
+                                onCurrencyChange = {},
+                                onBackup = {},
+                                onRestore = {}
                             )
                         } else {
                             SettingsScreen()
@@ -152,8 +175,7 @@ fun MainScreenContent(
                 exit = fadeOut() + scaleOut(targetScale = 0.8f),
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 20.dp, bottom = 110.dp)
-                    .navigationBarsPadding()
+                    .padding(end = 20.dp, bottom = 16.dp)
             ) {
                 FloatingActionButton(
                     onClick = onNavigateToAddExpense,
@@ -168,20 +190,11 @@ fun MainScreenContent(
                     )
                 }
             }
-            WiseNavigationBar(
-                items = navItems,
-                pagePosition = pagerState.currentPage + pagerState.currentPageOffsetFraction,
-                onSelect = { idx ->
-                    scope.launch { pagerState.animateScrollToPage(idx) }
-                },
-                modifier = Modifier.align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-            )
         }
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, backgroundColor = 0xFF673AB7, device = "id:pixel_10_pro")
 @Composable
 fun MainScreenPreview() {
     val navItems = listOf(
@@ -190,11 +203,13 @@ fun MainScreenPreview() {
         NavItems("Settings", Icons.Default.Settings),
     )
     val pagerState = rememberPagerState { navItems.size }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     WiseSpendTheme {
         MainScreenContent(
             navItems = navItems,
             pagerState = pagerState,
+            snackbarHostState = snackbarHostState,
             onNavigateToAddExpense = {},
             onNavigateToNotifications = {}
         )

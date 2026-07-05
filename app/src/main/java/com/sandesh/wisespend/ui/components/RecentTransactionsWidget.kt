@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -17,11 +18,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Label
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.composables.icons.lucide.CalendarDays
 import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Trash2
 import com.sandesh.wisespend.data.model.Expense
 import com.sandesh.wisespend.ui.screens.defaultCategories
 import com.sandesh.wisespend.ui.theme.WiseSpendTheme
@@ -40,7 +52,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-enum class TransactionsMode{
+enum class TransactionsMode {
     RECENT,
     DAILY
 }
@@ -51,15 +63,19 @@ fun iconForCategory(categoryName: String): ImageVector =
 
 @Composable
 fun RecentTransactionsWidget(
+    modifier: Modifier = Modifier,
     expenses: List<Expense>,
     mode: TransactionsMode = TransactionsMode.RECENT,
     filterInternally: Boolean = true,
     currencySymbol: String = "$",
-    modifier: Modifier = Modifier
+    onDeleteExpense: (Expense) -> Unit = {}
 ) {
     val todayDateString = remember {
         LocalDate.now(ZoneId.systemDefault()).toString()
     }
+
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
 
     val displayedExpenses = remember(expenses, mode, filterInternally) {
         if (mode == TransactionsMode.DAILY && filterInternally) {
@@ -98,13 +114,54 @@ fun RecentTransactionsWidget(
             EmptyTransactionsPlaceholder()
         } else {
             displayedExpenses.forEachIndexed { _, expense ->
-                AnimatedVisibility(
-                    visible = true,
-                    enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 })
-                ) {
-                    TransactionRow(mode = mode, expense = expense, currencySymbol = currencySymbol)
+                key(expense.id) {
+
+                    AnimatedVisibility(
+                        visible = true,
+                        enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 })
+                    ) {
+                        TransactionRow(
+                            mode = mode,
+                            expense = expense,
+                            currencySymbol = currencySymbol,
+                            onDelete = {
+                                expenseToDelete = it
+                                showDeleteDialog = true
+                            }
+                        )
+                    }
                 }
             }
+        }
+
+        if (showDeleteDialog && expenseToDelete != null) {
+            AlertDialog(
+                onDismissRequest = {
+                    showDeleteDialog = false
+                    expenseToDelete = null
+                },
+                title = { Text("Delete Transaction") },
+                text = { Text("Are you sure you want to delete this transaction?") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            expenseToDelete?.let { onDeleteExpense(it) }
+                            showDeleteDialog = false
+                            expenseToDelete = null
+                        }
+                    ) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        showDeleteDialog = false
+                        expenseToDelete = null
+                    }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }
@@ -113,7 +170,8 @@ fun RecentTransactionsWidget(
 private fun TransactionRow(
     mode: TransactionsMode,
     expense: Expense,
-    currencySymbol: String = "$"
+    currencySymbol: String = "$",
+    onDelete: (Expense) -> Unit
 ) {
     val formatter = DateTimeFormatter.ofPattern("MMM dd")
     val displayDate = runCatching {
@@ -132,84 +190,120 @@ private fun TransactionRow(
         }
     }.getOrDefault("Invalid Time")
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = iconForCategory(expense.categoryName),
-                contentDescription = expense.categoryName,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-        }
+//    swipe to delete
+    val dismissState = rememberSwipeToDismissBoxState()
 
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = expense.title,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1
-            )
-            if (mode == TransactionsMode.RECENT)
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+            onDelete(expense)
+            dismissState.reset()
+        }
+    }
+
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
+            val color = when (dismissState.targetValue) {
+                SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.errorContainer
+                else -> MaterialTheme.colorScheme.surface
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(color)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd
             ) {
                 Icon(
-                    imageVector = Lucide.CalendarDays,
-                    contentDescription = "calendar icon",
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    modifier = Modifier.size(12.dp)
+                    imageVector = Lucide.Trash2,
+                    contentDescription = "Delete",
+                    tint = MaterialTheme.colorScheme.error
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+            }
+        }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = iconForCategory(expense.categoryName),
+                    contentDescription = expense.categoryName,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = displayDate,
+                    text = expense.title,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1
+                )
+                if (mode == TransactionsMode.RECENT)
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Lucide.CalendarDays,
+                            contentDescription = "calendar icon",
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = displayDate,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            fontSize = 12.sp
+                        )
+                    }
+                else {
+                    Text(
+                        text = "Today",
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            // Amount and time
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "-$currencySymbol${"%.2f".format(expense.amount)}",
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = displayTime,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     fontSize = 12.sp
                 )
             }
-            else{
-                Text(
-                    text = "Today",
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
-
-        // Amount and time
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "-$currencySymbol${"%.2f".format(expense.amount)}",
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = displayTime,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                fontSize = 12.sp
-            )
         }
     }
 }

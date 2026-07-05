@@ -4,15 +4,26 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.sandesh.wisespend.data.local.AppDatabase
+import com.sandesh.wisespend.data.model.BackupData
 import com.sandesh.wisespend.data.model.Category
 import com.sandesh.wisespend.data.model.Expense
 import com.sandesh.wisespend.data.model.UserSettings
+import com.sandesh.wisespend.data.model.toBackup
+import com.sandesh.wisespend.data.model.toEntity
 import com.sandesh.wisespend.data.repository.ExpenseRepository
 import com.sandesh.wisespend.ui.screens.ExpenseCategory
 import com.sandesh.wisespend.ui.screens.defaultCategories
 import com.sandesh.wisespend.util.IconMapper
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import java.time.LocalDate
 
 // View model to access expense data
@@ -87,6 +98,12 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun addExpense(expense: Expense) {
+        viewModelScope.launch {
+            repository.insertExpense(expense)
+        }
+    }
+
     fun addExpense(title: String, amount: Double, categoryName: String, date: LocalDate, time: String) {
         viewModelScope.launch {
             repository.insertExpense(
@@ -144,6 +161,48 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
             } else {
                 repository.upsert(UserSettings(currencyCode = code))
             }
+        }
+    }
+
+    suspend fun exportData(): String = withContext(Dispatchers.IO) {
+        val expenses = repository.getAllExpensesSync().map { it.toBackup() }
+        val categories = repository.getAllCategoriesSync().map { it.toBackup() }
+        val settings = repository.getSettingsSync()?.toBackup()
+
+        val backupData = BackupData(
+            expenses = expenses,
+            categories = categories,
+            settings = settings
+        )
+
+        Json.encodeToString(backupData)
+    }
+
+    suspend fun importData(jsonData: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val backupData = Json.decodeFromString<BackupData>(jsonData)
+
+            // Version check for future compatibility
+            // TODO: add compatibility for old version of backup version
+            //  if i changed something later in db
+            if (backupData.version > 1) {
+                return@withContext Result.failure(Exception("Unsupported backup version: ${backupData.version}"))
+            }
+
+            // Clear existing data
+            // For a clean restore, we clear then insert
+            repository.deleteAllExpenses()
+            repository.deleteAllCategories()
+
+            repository.insertAllExpenses(backupData.expenses.map { it.toEntity() })
+            repository.insertAllCategories(backupData.categories.map { it.toEntity() })
+            backupData.settings?.let {
+                repository.upsert(it.toEntity())
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 }

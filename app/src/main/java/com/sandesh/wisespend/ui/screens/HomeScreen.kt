@@ -14,10 +14,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -34,11 +37,14 @@ import com.sandesh.wisespend.ui.components.RecentTransactionsWidget
 import com.sandesh.wisespend.ui.theme.WiseSpendTheme
 import com.sandesh.wisespend.util.CurrencyUtils
 import com.sandesh.wisespend.viewmodel.ExpenseViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     onNavigateToNotifications:() -> Unit,
+    snackbarHostState: SnackbarHostState,
     expenseViewModel: ExpenseViewModel = viewModel()
 ) {
     val recentExpenses by expenseViewModel.recentExpenses.collectAsStateWithLifecycle()
@@ -46,6 +52,7 @@ fun HomeScreen(
     val userName by expenseViewModel.userName.collectAsStateWithLifecycle()
     val totalSpent by expenseViewModel.totalSpent.collectAsStateWithLifecycle()
     val currencyCode by expenseViewModel.currencyCode.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
 
     HomeScreenContent(
         modifier = modifier,
@@ -56,7 +63,11 @@ fun HomeScreen(
         totalSpent = totalSpent,
         currencyCode = currencyCode,
         onSetUsername = { expenseViewModel.setUsername(it) },
-        onSetBudget = { expenseViewModel.setBudget(it) }
+        onSetBudget = { expenseViewModel.setBudget(it) },
+        onDeleteExpense = { expenseViewModel.deleteExpense(it) },
+        onUndoDelete = { expenseViewModel.addExpense(it) },
+        snackbarHostState = snackbarHostState,
+        scope = scope
     )
 }
 
@@ -71,7 +82,11 @@ fun HomeScreenContent(
     totalSpent: Double,
     currencyCode: String,
     onSetUsername: (String) -> Unit,
-    onSetBudget: (Double) -> Unit
+    onSetBudget: (Double) -> Unit,
+    onDeleteExpense: (Expense) -> Unit,
+    onUndoDelete: (Expense) -> Unit,
+    snackbarHostState: SnackbarHostState,
+    scope: CoroutineScope
 ) {
     val scrollState = rememberScrollState()
 
@@ -124,7 +139,19 @@ fun HomeScreenContent(
             Spacer(modifier = Modifier.size(24.dp))
             RecentTransactionsWidget(
                 expenses = recentExpenses,
-                currencySymbol = currencySymbol
+                currencySymbol = currencySymbol,
+                onDeleteExpense = { expense ->
+                    onDeleteExpense(expense)
+                    scope.launch {
+                        val result = snackbarHostState.showSnackbar(
+                            message = "Transaction deleted",
+                            actionLabel = "Undo"
+                        )
+                        if (result == SnackbarResult.ActionPerformed) {
+                            onUndoDelete(expense)
+                        }
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.size(16.dp))
@@ -144,7 +171,11 @@ fun HomeScreenPreview() {
             totalSpent = 250.0,
             currencyCode = "NPR",
             onSetUsername = {},
-            onSetBudget = {}
+            onSetBudget = {},
+            onDeleteExpense = {},
+            onUndoDelete = {},
+            snackbarHostState = SnackbarHostState(),
+            scope = rememberCoroutineScope()
         )
     }
 }

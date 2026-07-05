@@ -1,5 +1,8 @@
 package com.sandesh.wisespend.ui.screens
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -38,6 +41,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +55,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.composables.icons.lucide.CloudDownload
+import com.composables.icons.lucide.CloudUpload
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Moon
 import com.composables.icons.lucide.Palette
@@ -65,6 +71,11 @@ import com.sandesh.wisespend.ui.theme.ThemeState
 import com.sandesh.wisespend.ui.theme.WiseSpendTheme
 import com.sandesh.wisespend.util.CurrencyUtils
 import com.sandesh.wisespend.viewmodel.ExpenseViewModel
+import kotlinx.coroutines.launch
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,11 +84,53 @@ fun SettingsScreen(
     expenseViewModel: ExpenseViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val availableBalance by expenseViewModel.availableBalance.collectAsStateWithLifecycle()
     val currencyCode by expenseViewModel.currencyCode.collectAsStateWithLifecycle()
 
     val currentMode = ThemeState.themeMode.value
     val currentScheme = ThemeState.colorScheme.value
+
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let {
+            scope.launch {
+                try {
+                    val jsonData = expenseViewModel.exportData()
+                    context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                        outputStream.write(jsonData.toByteArray())
+                    }
+                    Toast.makeText(context, "Backup created successfully", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Failed to create backup: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    val openDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            scope.launch {
+                try {
+                    val inputStream = context.contentResolver.openInputStream(it)
+                    val reader = BufferedReader(InputStreamReader(inputStream))
+                    val jsonData = reader.use { r -> r.readText() }
+                    
+                    val result = expenseViewModel.importData(jsonData)
+                    if (result.isSuccess) {
+                        Toast.makeText(context, "Data imported successfully", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Import failed: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Failed to read file: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
 
     SettingsScreenContent(
         modifier = modifier,
@@ -87,7 +140,14 @@ fun SettingsScreen(
         currentScheme = currentScheme,
         onModeChange = { mode -> ThemeState.setMode(context, mode) },
         onSchemeChange = { scheme -> ThemeState.setScheme(context, scheme) },
-        onCurrencyChange = { code -> expenseViewModel.setCurrencyCode(code) }
+        onCurrencyChange = { code -> expenseViewModel.setCurrencyCode(code) },
+        onBackup = {
+            val date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmm"))
+            createDocumentLauncher.launch("WiseSpend_Backup_$date.json")
+        },
+        onRestore = {
+            openDocumentLauncher.launch(arrayOf("application/json"))
+        }
     )
 }
 
@@ -101,7 +161,9 @@ fun SettingsScreenContent(
     currentScheme: AppColorScheme,
     onModeChange: (AppThemeMode) -> Unit,
     onSchemeChange: (AppColorScheme) -> Unit,
-    onCurrencyChange: (String) -> Unit
+    onCurrencyChange: (String) -> Unit,
+    onBackup: () -> Unit,
+    onRestore: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -236,6 +298,110 @@ fun SettingsScreenContent(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
+            item(key = "backup_restore") {
+                ExpandableCard(
+                    header = {
+                        SectionHeader(
+                            icon = Lucide.CloudDownload,
+                            title = "Backup and restore"
+                        )
+                    }
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    ) {
+                        SettingsCard(
+                            onClick = onBackup
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Lucide.CloudUpload,
+                                    contentDescription = "Backup data",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .background(
+                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                            shape = RoundedCornerShape(12.dp)
+                                        )
+                                        .padding(8.dp)
+                                )
+
+                                Spacer(modifier = Modifier.width(16.dp))
+
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = "Local Backup",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Create a local backup of your data",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+
+                        SettingsCard(
+                            onClick = onRestore
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Lucide.CloudDownload,
+                                    contentDescription = "Restore data",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .background(
+                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                            shape = RoundedCornerShape(12.dp)
+                                        )
+                                        .padding(8.dp)
+                                )
+
+                                Spacer(modifier = Modifier.width(16.dp))
+
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = "Import Data",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Restore data from a saved JSON file",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            item(key = "backup_spacer") {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             item(key = "about") {
                 ExpandableCard(
                     header = {
@@ -303,18 +469,24 @@ private fun SectionHeader(
 
 @Composable
 private fun SettingsCard(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick ?: {},
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 2.dp,
         border = BorderStroke(
-            1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+            1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
         )
     ) {
-        Box(modifier = Modifier.padding(16.dp)) {
+        Box(
+            modifier = Modifier.padding(16.dp)
+        )
+        {
             content()
         }
     }
@@ -446,7 +618,9 @@ fun SettingsScreenPreview() {
             currentScheme = AppColorScheme.MONO2,
             onModeChange = {},
             onSchemeChange = {},
-            onCurrencyChange = {}
+            onCurrencyChange = {},
+            onBackup = {},
+            onRestore = {}
         )
     }
 }
