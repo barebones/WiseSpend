@@ -24,8 +24,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import com.sandesh.wisespend.R
 import com.sandesh.wisespend.ui.theme.WiseSpendTheme
+import com.sandesh.wisespend.ui.utils.TestTags
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -50,7 +54,8 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(MaterialTheme.colorScheme.background)
+            .testTag(TestTags.SPLASH_SCREEN_ROOT),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -65,6 +70,7 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                     .size(160.dp)
                     .scale(scale.value)
                     .alpha(alpha.value)
+                    .testTag(TestTags.SPLASH_LOGO)
             )
 
             Text(
@@ -74,7 +80,10 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 2.sp
                 ),
-                modifier = Modifier.alpha(alpha.value)
+                modifier = Modifier
+                    .alpha(alpha.value)
+                    .testTag(TestTags.SPLASH_APP_NAME)
+                    .semantics { heading() }
             )
         }
     }

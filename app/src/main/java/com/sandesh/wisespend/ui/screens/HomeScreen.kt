@@ -28,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.testTag
 import com.composables.icons.lucide.Bell
 import com.composables.icons.lucide.Lucide
 import com.sandesh.wisespend.data.model.Expense
@@ -35,6 +36,7 @@ import com.sandesh.wisespend.ui.components.CardWidget
 import com.sandesh.wisespend.ui.components.GreetingHeader
 import com.sandesh.wisespend.ui.components.RecentTransactionsWidget
 import com.sandesh.wisespend.ui.theme.WiseSpendTheme
+import com.sandesh.wisespend.ui.utils.TestTags
 import com.sandesh.wisespend.util.CurrencyUtils
 import com.sandesh.wisespend.viewmodel.ExpenseViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -91,7 +93,7 @@ fun HomeScreenContent(
     val scrollState = rememberScrollState()
 
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.testTag(TestTags.HOME_SCREEN_ROOT),
         topBar = {
             TopAppBar(
                 title = { 
@@ -110,6 +112,7 @@ fun HomeScreenContent(
                         modifier = Modifier
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.surface)
+                            .testTag(TestTags.NOTIFICATION_BUTTON)
                     ) {
                         Icon(
                             imageVector = Lucide.Bell,
@@ -134,7 +137,8 @@ fun HomeScreenContent(
                 budget = budget,
                 spent = totalSpent,
                 currencySymbol = currencySymbol,
-                onSetBudget = { onSetBudget(it) }
+                onSetBudget = { onSetBudget(it) },
+                modifier = Modifier.testTag(TestTags.BUDGET_CARD)
             )
             Spacer(modifier = Modifier.size(24.dp))
             RecentTransactionsWidget(
@@ -151,7 +155,8 @@ fun HomeScreenContent(
                             onUndoDelete(expense)
                         }
                     }
-                }
+                },
+                modifier = Modifier.testTag(TestTags.RECENT_TRANSACTIONS)
             )
 
             Spacer(modifier = Modifier.size(16.dp))

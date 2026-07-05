@@ -41,12 +41,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.testTag
 import com.composables.icons.lucide.CalendarDays
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Trash2
 import com.sandesh.wisespend.data.model.Expense
 import com.sandesh.wisespend.ui.screens.defaultCategories
 import com.sandesh.wisespend.ui.theme.WiseSpendTheme
+import com.sandesh.wisespend.ui.utils.TestTags
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -111,7 +113,7 @@ fun RecentTransactionsWidget(
         }
 
         if (displayedExpenses.isEmpty()) {
-            EmptyTransactionsPlaceholder()
+            EmptyTransactionsPlaceholder(Modifier.testTag(TestTags.EMPTY_TRANSACTIONS))
         } else {
             displayedExpenses.forEachIndexed { _, expense ->
                 key(expense.id) {
@@ -127,7 +129,8 @@ fun RecentTransactionsWidget(
                             onDelete = {
                                 expenseToDelete = it
                                 showDeleteDialog = true
-                            }
+                            },
+                            modifier = Modifier.testTag("${TestTags.TRANSACTION_ITEM}${expense.id}")
                         )
                     }
                 }
@@ -168,6 +171,7 @@ fun RecentTransactionsWidget(
 
 @Composable
 private fun TransactionRow(
+    modifier: Modifier = Modifier,
     mode: TransactionsMode,
     expense: Expense,
     currencySymbol: String = "$",
@@ -203,6 +207,7 @@ private fun TransactionRow(
 
     SwipeToDismissBox(
         state = dismissState,
+        modifier = modifier,
         enableDismissFromStartToEnd = false,
         backgroundContent = {
             val color = when (dismissState.targetValue) {
@@ -309,9 +314,9 @@ private fun TransactionRow(
 }
 
 @Composable
-private fun EmptyTransactionsPlaceholder() {
+private fun EmptyTransactionsPlaceholder(modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface)

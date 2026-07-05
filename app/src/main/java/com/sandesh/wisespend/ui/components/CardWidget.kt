@@ -43,7 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.sandesh.wisespend.ui.screens.TextGray
 import com.sandesh.wisespend.ui.theme.WiseSpendTheme
+import com.sandesh.wisespend.ui.utils.TestTags
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -112,6 +113,7 @@ fun CardWidget(
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
                         .clickable { showBudgetDialog = true }
                         .padding(horizontal = 10.dp, vertical = 4.dp)
+                        .testTag(TestTags.SET_BUDGET_BTN)
                 ) {
                     Text(
                         text = "Set Budget",
@@ -135,7 +137,9 @@ fun CardWidget(
                     onClick = {
                         isBalanceVisible = !isBalanceVisible
                     },
-                    Modifier.background(Color.Transparent)
+                    Modifier
+                        .background(Color.Transparent)
+                        .testTag(TestTags.BALANCE_VISIBILITY_TOGGLE)
                 ) {
                     Icon(
                         imageVector = if (isBalanceVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
@@ -149,10 +153,10 @@ fun CardWidget(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 BudgetProgress(
-                spent.toFloat(),
+                modifier = Modifier.fillMaxWidth(),
+                spent = spent.toFloat(),
                 total = budget.toFloat(),
                 currencySymbol = currencySymbol,
-                modifier = Modifier.fillMaxWidth()
             )
             }
 
@@ -205,14 +209,27 @@ fun SetBudgetDialog(
                     Text(text = "  $currencySymbol", color = TextGray, fontSize = 16.sp)
                     TextField(
                         value = input,
-                        onValueChange = { input = it },
-                        modifier = Modifier.fillMaxWidth(),
+                        onValueChange = { newValue ->
+                            val filtered = newValue.filter { it.isDigit() || it == '.' }
+                            val parts = filtered.split('.')
+                            val isWithinLimits = when {
+                                parts.size == 1 -> parts[0].length <= 9
+                                parts.size == 2 -> parts[0].length <= 9 && parts[1].length <= 2
+                                else -> false
+                            }
+                            if (isWithinLimits && filtered.length <= 12) {
+                                input = filtered
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(TestTags.BUDGET_DIALOG_INPUT),
                         singleLine = true,
                         placeholder = {
-                            Text("Enter budget")
+                            Text("Enter budget (e.g. 5000)")
                         },
                         keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number
+                            keyboardType = KeyboardType.Decimal
                         ),
                         shape = RoundedCornerShape(12.dp),
                         colors = TextFieldDefaults.colors(
@@ -240,10 +257,14 @@ fun SetBudgetDialog(
 
                     Button(
                         onClick = {
-                            input.toDoubleOrNull()?.let { onConfirm(it) }
+                            input.toDoubleOrNull()?.let { 
+                                if (it > 0) onConfirm(it) 
+                            }
                         },
-                        enabled = input.toDoubleOrNull() != null,
-                        modifier = Modifier.weight(1f),
+                        enabled = (input.toDoubleOrNull() ?: 0.0) > 0.0,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag(TestTags.BUDGET_DIALOG_SAVE),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
@@ -259,10 +280,10 @@ fun SetBudgetDialog(
 
 @Composable
 fun BudgetProgress(
+    modifier: Modifier = Modifier,
     spent: Float,
     total: Float,
     currencySymbol: String = "₹",
-    modifier: Modifier = Modifier
 ) {
     val progress = if (total > 0f) {
         (spent / total).coerceIn(0f, 1f)

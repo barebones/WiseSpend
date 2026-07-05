@@ -185,11 +185,13 @@ fun AddExpenseContent(
         )
         )
     }, bottomBar = {
+        val parsedAmount = amount.toDoubleOrNull() ?: 0.0
+        val isDataValid = expenseTitle.isNotBlank() && parsedAmount > 0.0 && selectedCategory != null
+
         Button(
-            enabled = expenseTitle.isNotBlank() && amount.toDoubleOrNull() != null && selectedCategory != null,
+            enabled = isDataValid,
             onClick = {
-                val parsedAmount = amount.toDoubleOrNull()
-                if (expenseTitle.isNotBlank() && parsedAmount != null && selectedCategory != null) {
+                if (isDataValid) {
                     onSaveExpense(
                         expenseTitle.trim(), parsedAmount, selectedCategory!!.name, selectedDate, selectedTime
                     )
@@ -230,12 +232,27 @@ fun AddExpenseContent(
             CustomInputField(
                 label = "Expense Title",
                 value = expenseTitle,
-                onValueChange = { expenseTitle = it })
+                onValueChange = { if (it.length <= 40) expenseTitle = it })
 
             CustomInputField(
                 label = "Amount",
                 value = amount,
-                onValueChange = { amount = it },
+                onValueChange = { input ->
+                    // Safeguard: Digits and max one decimal point
+                    val filtered = input.filter { it.isDigit() || it == '.' }
+                    val parts = filtered.split('.')
+                    
+                    // Limit: Max 10 digits before decimal, max 2 after, max length 13
+                    val isWithinLimits = when {
+                        parts.size == 1 -> parts[0].length <= 10
+                        parts.size == 2 -> parts[0].length <= 10 && parts[1].length <= 2
+                        else -> false
+                    }
+
+                    if (isWithinLimits && filtered.length <= 13) {
+                        amount = filtered
+                    }
+                },
                 isAmount = true,
                 currencySymbol = currencySymbol
             )

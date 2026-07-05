@@ -155,7 +155,7 @@ fun SetUsernameDialog(
 
                 TextField(
                     value = input,
-                    onValueChange = { input = it },
+                    onValueChange = { if (it.length <= 20) input = it },
                     modifier = Modifier.fillMaxWidth()
                         .shadow(
                             elevation = 4.dp,
@@ -205,9 +205,11 @@ fun SetUsernameDialog(
 
                     Button(
                         onClick = {
-                            onConfirm(input)
+                            if (input.isNotBlank()) {
+                                onConfirm(input.trim())
+                            }
                         },
-                        enabled = input.isNotEmpty(),
+                        enabled = input.isNotBlank(),
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
