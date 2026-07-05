@@ -1,3 +1,18 @@
+<p align="center">
+  <img src=".github/assets/project_logo.svg" width="120" alt="logo" />
+
+  <br />
+  <br />
+
+  <img src="https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin" />
+  <img src="https://img.shields.io/badge/Jetpack_Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose" />
+
+  <br />
+
+  <img src="https://github.com/barebones/WiseSpend/actions/workflows/android.yml/badge.svg" alt="Build Status" />
+  <img src="https://img.shields.io/github/v/release/<OWNER>/<REPOSITORY>?include_prereleases&label=Latest%20Release" alt="Latest Release" />
+</p>
+
 # Wise Spend
 
 Wise Spend is an Android app for tracking daily expenses and managing personal budgets.
