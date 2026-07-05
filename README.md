@@ -11,7 +11,15 @@
 
   <img src="https://github.com/barebones/WiseSpend/actions/workflows/android.yml/badge.svg" alt="Build Status" />
   <img src="https://img.shields.io/github/v/release/barebones/WiseSpend?include_prereleases&label=Latest%20Release" alt="Latest Release" />
+
+  <br />
+  <br />
+
+  <a href="https://github.com/barebones/WiseSpend/releases/latest/download/WiseSpend.apk">
+    <img src="https://img.shields.io/badge/Download-APK-green?style=for-the-badge&logo=android" alt="Download APK" />
+  </a>
 </p>
+
 
 # Wise Spend
 
@@ -38,14 +46,18 @@ Wise Spend is an Android app for tracking daily expenses and managing personal b
 </details>
 
 ## Getting Started
+### Installation
+Head over to the [Releases](https://github.com/barebones/WiseSpend/releases/latest) page and 
+download the latest `WiseSpend-vX.X.apk`.
 
+
+## Development 
 ### Prerequisites
 
 - Android Studio Koala or newer
 - JDK 17
 - Android SDK 24 or higher
 
-### Installation
 
 1. Clone the repository:
    ```bash
