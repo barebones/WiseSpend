@@ -10,7 +10,7 @@
   <br />
 
   <img src="https://github.com/barebones/WiseSpend/actions/workflows/android.yml/badge.svg" alt="Build Status" />
-  <img src="https://img.shields.io/github/v/release/<OWNER>/<REPOSITORY>?include_prereleases&label=Latest%20Release" alt="Latest Release" />
+  <img src="https://img.shields.io/github/v/release/barebones/WiseSpend?include_prereleases&label=Latest%20Release" alt="Latest Release" />
 </p>
 
 # Wise Spend
