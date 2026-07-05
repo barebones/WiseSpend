@@ -92,8 +92,8 @@ app/
 - [ ] View spending Day/Week/Month/Year ranges.
 - [ ] Home screen widgets
 - [ ] Expense search and filters
-- [ ] Multiple currencies
-- [ ] Data export/import
+- [x] Multiple currencies
+- [x] Data export/import
 - [ ] Monthly spending insights
 - [ ] Expense reminders
 - [ ] Attach receipts/images to expenses
