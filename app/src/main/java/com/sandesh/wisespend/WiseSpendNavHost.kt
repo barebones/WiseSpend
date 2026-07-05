@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.sandesh.wisespend.ui.screens.AddExpenseScreen
 import com.sandesh.wisespend.ui.screens.NotificationScreen
+import com.sandesh.wisespend.ui.screens.SplashScreen
 
 @Composable
 fun WiseSpendNavHost(modifier: Modifier = Modifier) {
@@ -19,9 +20,19 @@ fun WiseSpendNavHost(modifier: Modifier = Modifier) {
 
     NavHost(
         navController = navController,
-        startDestination = "main",
+        startDestination = "splash",
         modifier = modifier.background(MaterialTheme.colorScheme.background)
     ) {
+        composable("splash") {
+            SplashScreen(
+                onAnimationFinished = {
+                    navController.navigate("main") {
+                        popUpTo("splash") { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable(
             route = "main",
             exitTransition = {

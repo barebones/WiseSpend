@@ -206,7 +206,7 @@ private fun TransactionRow(
         enableDismissFromStartToEnd = false,
         backgroundContent = {
             val color = when (dismissState.targetValue) {
-                SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.errorContainer
+                SwipeToDismissBoxValue.Settled-> MaterialTheme.colorScheme.errorContainer
                 else -> MaterialTheme.colorScheme.surface
             }
             Box(
