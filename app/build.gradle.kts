@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.sandesh.wisespend"
+    namespace = "github.barebones.wisespend"
     compileSdk = 37
 
     buildFeatures {
@@ -14,11 +14,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.sandesh.wisespend"
+        applicationId = "github.barebones.wisespend"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
