@@ -22,7 +22,7 @@ data class AnalyticsResult(
 
 object AnalyticsCalculator {
 
-    private val dateFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE
+    private val dateFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-M-d")
 
     private fun String.toLocalDate(): LocalDate =
         LocalDate.parse(this, dateFormatter)

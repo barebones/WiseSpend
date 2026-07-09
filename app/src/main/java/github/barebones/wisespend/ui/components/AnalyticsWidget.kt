@@ -16,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -39,7 +40,8 @@ import github.barebones.wisespend.util.AnalyticsRange
 fun AnalyticsWidgetContent(
     modifier: Modifier = Modifier,
     expenses: List<Expense>,
-    currencySymbol: String = "रू"
+    currencySymbol: String = "रू",
+    onSelectionChanged: (AnalyticsRange, Int) -> Unit = { _, _ -> }
 ) {
     var selectedRange by remember { mutableStateOf(AnalyticsRange.WEEK) }
     var manuallySelectedIndex by remember { mutableIntStateOf(-1) }
@@ -53,6 +55,10 @@ fun AnalyticsWidgetContent(
         manuallySelectedIndex
     } else {
         analytics.selectedIndex
+    }
+
+    LaunchedEffect(selectedRange, selectedIndex) {
+        onSelectionChanged(selectedRange, selectedIndex)
     }
 
     Card(

@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,11 +67,12 @@ fun iconForCategory(categoryName: String): ImageVector =
 @Composable
 fun RecentTransactionsWidget(
     modifier: Modifier = Modifier,
+    onNavigateToAllExpenses: (() -> Unit)? = null,
     expenses: List<Expense>,
     mode: TransactionsMode = TransactionsMode.RECENT,
     filterInternally: Boolean = true,
     currencySymbol: String = "$",
-    onDeleteExpense: (Expense) -> Unit = {}
+    onDeleteExpense: ((Expense) -> Unit)? = null
 ) {
     val todayDateString = remember {
         LocalDate.now(ZoneId.systemDefault()).toString()
@@ -97,19 +99,24 @@ fun RecentTransactionsWidget(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = if (mode == TransactionsMode.DAILY) "Today's Transactions" else "Recent Transactions",
+                text = if (mode == TransactionsMode.DAILY) "Selected Day Transactions" else "Recent Transactions",
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
             )
 //            TODO: add see all page to list all expenses with filters
-//            if (expenses.isNotEmpty()) {
-//                Text(
-//                    text = "See all",
-//                    color = MaterialTheme.colorScheme.primary,
-//                    fontSize = 13.sp
-//                )
-//            }
+            if (expenses.isNotEmpty() && onNavigateToAllExpenses != null) {
+                Text(
+                    modifier = Modifier.clickable(
+                        onClick = {
+                            onNavigateToAllExpenses()
+                        }
+                    ),
+                    text = "See all",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 13.sp
+                )
+            }
         }
 
         if (displayedExpenses.isEmpty()) {
@@ -126,10 +133,12 @@ fun RecentTransactionsWidget(
                             mode = mode,
                             expense = expense,
                             currencySymbol = currencySymbol,
-                            onDelete = {
-                                expenseToDelete = it
-                                showDeleteDialog = true
-                            },
+                            onDelete = if (onDeleteExpense != null) {
+                                {
+                                    expenseToDelete = it
+                                    showDeleteDialog = true
+                                }
+                            } else null,
                             modifier = Modifier.testTag("${TestTags.TRANSACTION_ITEM}${expense.id}")
                         )
                     }
@@ -148,7 +157,7 @@ fun RecentTransactionsWidget(
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            expenseToDelete?.let { onDeleteExpense(it) }
+                            expenseToDelete?.let { onDeleteExpense?.invoke(it) }
                             showDeleteDialog = false
                             expenseToDelete = null
                         }
@@ -170,12 +179,12 @@ fun RecentTransactionsWidget(
 }
 
 @Composable
-private fun TransactionRow(
+fun TransactionRow(
     modifier: Modifier = Modifier,
     mode: TransactionsMode,
     expense: Expense,
     currencySymbol: String = "$",
-    onDelete: (Expense) -> Unit
+    onDelete: ((Expense) -> Unit)? = null
 ) {
     val formatter = DateTimeFormatter.ofPattern("MMM dd")
     val displayDate = runCatching {
@@ -197,10 +206,12 @@ private fun TransactionRow(
 //    swipe to delete
     val dismissState = rememberSwipeToDismissBoxState()
 
-    LaunchedEffect(dismissState.currentValue) {
-        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
-            onDelete(expense)
-            dismissState.reset()
+    if (onDelete != null) {
+        LaunchedEffect(dismissState.currentValue) {
+            if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+                onDelete(expense)
+                dismissState.reset()
+            }
         }
     }
 
@@ -209,24 +220,27 @@ private fun TransactionRow(
         state = dismissState,
         modifier = modifier,
         enableDismissFromStartToEnd = false,
+        gesturesEnabled = onDelete != null,
         backgroundContent = {
-            val color = when (dismissState.targetValue) {
-                SwipeToDismissBoxValue.Settled-> MaterialTheme.colorScheme.errorContainer
-                else -> MaterialTheme.colorScheme.surface
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(color)
-                    .padding(horizontal = 20.dp),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Icon(
-                    imageVector = Lucide.Trash2,
-                    contentDescription = "Delete",
-                    tint = MaterialTheme.colorScheme.error
-                )
+            if (onDelete != null) {
+                val color = when (dismissState.targetValue) {
+                    SwipeToDismissBoxValue.Settled -> MaterialTheme.colorScheme.errorContainer
+                    else -> MaterialTheme.colorScheme.surface
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(color)
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    Icon(
+                        imageVector = Lucide.Trash2,
+                        contentDescription = "Delete",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     ) {
@@ -362,7 +376,7 @@ fun RecentTransactionsWidgetPreview() {
     )
     WiseSpendTheme {
         Box(modifier = Modifier.padding(16.dp)) {
-            RecentTransactionsWidget(expenses = sampleExpenses)
+            RecentTransactionsWidget(expenses = sampleExpenses, onNavigateToAllExpenses ={})
         }
     }
 }
@@ -372,7 +386,7 @@ fun RecentTransactionsWidgetPreview() {
 fun RecentTransactionsWidgetEmptyPreview() {
     WiseSpendTheme {
         Box(modifier = Modifier.padding(16.dp)) {
-            RecentTransactionsWidget(expenses = emptyList())
+            RecentTransactionsWidget(expenses = emptyList(), onNavigateToAllExpenses = {})
         }
     }
 }
