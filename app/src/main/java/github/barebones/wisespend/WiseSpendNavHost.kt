@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import github.barebones.wisespend.ui.screens.AddExpenseScreen
+import github.barebones.wisespend.ui.screens.AllExpensesScreen
 import github.barebones.wisespend.ui.screens.NotificationScreen
 import github.barebones.wisespend.ui.screens.SplashScreen
 
@@ -48,6 +49,9 @@ fun WiseSpendNavHost(modifier: Modifier = Modifier) {
                 },
                 onNavigateToNotifications = {
                     navController.navigate("notifications")
+                },
+                onNavigateToAllExpenses = {
+                    navController.navigate("all_expenses")
                 }
             )
         }
@@ -95,6 +99,29 @@ fun WiseSpendNavHost(modifier: Modifier = Modifier) {
                 onBack = {
                     navController.popBackStack()
                 }
+            )
+        }
+
+//      Navigate to all expenses screen
+        composable(
+            route= "all_expenses",
+            enterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = tween(300)
+                )
+            },
+            popExitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = tween(300)
+                )
+            }
+            ) {
+            AllExpensesScreen(
+                onBack = {
+                    navController.popBackStack()
+                },
             )
         }
     }

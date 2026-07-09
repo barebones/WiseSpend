@@ -46,6 +46,7 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     modifier: Modifier = Modifier,
     onNavigateToNotifications:() -> Unit,
+    onNavigateToAllExpenses: () -> Unit,
     snackbarHostState: SnackbarHostState,
     expenseViewModel: ExpenseViewModel = viewModel()
 ) {
@@ -69,7 +70,8 @@ fun HomeScreen(
         onDeleteExpense = { expenseViewModel.deleteExpense(it) },
         onUndoDelete = { expenseViewModel.addExpense(it) },
         snackbarHostState = snackbarHostState,
-        scope = scope
+        scope = scope,
+        onNavigateToAllExpenses = onNavigateToAllExpenses
     )
 }
 
@@ -77,6 +79,7 @@ fun HomeScreen(
 @Composable
 fun HomeScreenContent(
     modifier: Modifier = Modifier,
+    onNavigateToAllExpenses: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     recentExpenses: List<Expense>,
     budget: Double,
@@ -142,6 +145,7 @@ fun HomeScreenContent(
             )
             Spacer(modifier = Modifier.size(24.dp))
             RecentTransactionsWidget(
+                onNavigateToAllExpenses = onNavigateToAllExpenses,
                 expenses = recentExpenses,
                 currencySymbol = currencySymbol,
                 onDeleteExpense = { expense ->
@@ -180,7 +184,8 @@ fun HomeScreenPreview() {
             onDeleteExpense = {},
             onUndoDelete = {},
             snackbarHostState = SnackbarHostState(),
-            scope = rememberCoroutineScope()
+            scope = rememberCoroutineScope(),
+            onNavigateToAllExpenses = {}
         )
     }
 }

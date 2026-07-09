@@ -55,7 +55,8 @@ data class NavItems(
 @Composable
 fun MainScreen(
     onNavigateToAddExpense: () -> Unit,
-    onNavigateToNotifications: () -> Unit
+    onNavigateToNotifications: () -> Unit,
+    onNavigateToAllExpenses: () -> Unit,
 ) {
     val navItems = listOf(
         NavItems("Home", Icons.Default.Home),
@@ -71,7 +72,8 @@ fun MainScreen(
         pagerState = pagerState,
         snackbarHostState = snackbarHostState,
         onNavigateToAddExpense = onNavigateToAddExpense,
-        onNavigateToNotifications = onNavigateToNotifications
+        onNavigateToNotifications = onNavigateToNotifications,
+        onNavigateToAllExpenses = onNavigateToAllExpenses
     )
 }
 
@@ -81,7 +83,8 @@ fun MainScreenContent(
     pagerState: PagerState,
     snackbarHostState: SnackbarHostState,
     onNavigateToAddExpense: () -> Unit,
-    onNavigateToNotifications: () -> Unit
+    onNavigateToNotifications: () -> Unit,
+    onNavigateToAllExpenses: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
 
@@ -129,12 +132,14 @@ fun MainScreenContent(
                                 onDeleteExpense = {},
                                 onUndoDelete = {},
                                 snackbarHostState = snackbarHostState,
-                                scope = scope
+                                scope = scope,
+                                onNavigateToAllExpenses = onNavigateToAllExpenses
                             )
                         } else {
                             HomeScreen(
                                 modifier = Modifier,
                                 onNavigateToNotifications = onNavigateToNotifications,
+                                onNavigateToAllExpenses = onNavigateToAllExpenses,
                                 snackbarHostState = snackbarHostState
                             )
                         }
@@ -211,7 +216,8 @@ fun MainScreenPreview() {
             pagerState = pagerState,
             snackbarHostState = snackbarHostState,
             onNavigateToAddExpense = {},
-            onNavigateToNotifications = {}
+            onNavigateToNotifications = {},
+            onNavigateToAllExpenses = {}
         )
     }
 }
