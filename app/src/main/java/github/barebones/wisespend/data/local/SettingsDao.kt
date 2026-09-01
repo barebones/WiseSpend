@@ -21,4 +21,7 @@ interface SettingsDao {
 
     @Query("UPDATE user_settings SET currencyCode = :code Where id = 1")
     suspend fun updateCurrencyCode(code: String)
+
+    @Query("UPDATE user_settings SET activeBudgetId = :id Where id = 1")
+    suspend fun updateActiveBudgetId(id: Int)
 }

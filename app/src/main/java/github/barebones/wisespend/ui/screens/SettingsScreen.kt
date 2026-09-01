@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.composables.icons.lucide.Calendar
 import com.composables.icons.lucide.CloudDownload
 import com.composables.icons.lucide.CloudUpload
 import com.composables.icons.lucide.Lucide
@@ -71,12 +72,22 @@ import github.barebones.wisespend.ui.theme.ThemeState
 import github.barebones.wisespend.ui.theme.WiseSpendTheme
 import github.barebones.wisespend.util.CurrencyUtils
 import github.barebones.wisespend.data.model.CurrencyItem
+import github.barebones.wisespend.data.model.MonthlyBudget
 import github.barebones.wisespend.viewmodel.ExpenseViewModel
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import java.time.Month
+import java.time.format.TextStyle
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,6 +102,41 @@ fun SettingsScreen(
 
     val currentMode = ThemeState.themeMode.value
     val currentScheme = ThemeState.colorScheme.value
+
+    var showNewMonthDialog by remember { mutableStateOf(false) }
+    val activeBudget by expenseViewModel.activeBudget.collectAsStateWithLifecycle()
+
+    if (showNewMonthDialog) {
+        val now = LocalDateTime.now()
+        val defaultLabel = now.month.getDisplayName(TextStyle.FULL, Locale.getDefault()) + " " + now.year
+        var labelInput by remember { mutableStateOf(defaultLabel) }
+
+        AlertDialog(
+            onDismissRequest = { showNewMonthDialog = false },
+            title = { Text("Start New Month") },
+            text = {
+                Column {
+                    Text("This will archive current spending and start fresh.", fontSize = 14.sp)
+                    Spacer(Modifier.height(16.dp))
+                    TextField(
+                        value = labelInput,
+                        onValueChange = { labelInput = it },
+                        label = { Text("Month Label (e.g. Shrawan)") },
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    expenseViewModel.startNewMonth(labelInput)
+                    showNewMonthDialog = false
+                }) { Text("Confirm") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNewMonthDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
 
     val createDocumentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -148,7 +194,9 @@ fun SettingsScreen(
         },
         onRestore = {
             openDocumentLauncher.launch(arrayOf("application/json"))
-        }
+        },
+        activeBudgetLabel = activeBudget?.label ?: "None",
+        onStartNewMonth = { showNewMonthDialog = true }
     )
 }
 
@@ -164,7 +212,9 @@ fun SettingsScreenContent(
     onSchemeChange: (AppColorScheme) -> Unit,
     onCurrencyChange: (String) -> Unit,
     onBackup: () -> Unit,
-    onRestore: () -> Unit
+    onRestore: () -> Unit,
+    activeBudgetLabel: String = "",
+    onStartNewMonth: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -200,6 +250,31 @@ fun SettingsScreenContent(
                     }) {
                     SettingsCard {
                         Column {
+                            Text(
+                                text = "Current Period",
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(text = activeBudgetLabel, fontWeight = FontWeight.Medium)
+                                Button(
+                                    onClick = onStartNewMonth,
+                                    shape = RoundedCornerShape(12.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    Text("New Month", fontSize = 12.sp)
+                                }
+                            }
+                            
+                            Spacer(Modifier.height(16.dp))
+
                             Text(
                                 text = "Currency",
                                 color = MaterialTheme.colorScheme.primary,

@@ -11,5 +11,6 @@ data class UserSettings(
     @PrimaryKey val id: Int = 1,
     val budget: Double = 0.0,
     val userName: String = "User",
-    val currencyCode: String = "NPR"
+    val currencyCode: String = "NPR",
+    val activeBudgetId: Int = 0
 )

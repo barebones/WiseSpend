@@ -57,6 +57,7 @@ fun MainScreen(
     onNavigateToAddExpense: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onNavigateToAllExpenses: () -> Unit,
+    onNavigateToSavings: () -> Unit,
 ) {
     val navItems = listOf(
         NavItems("Home", Icons.Default.Home),
@@ -73,7 +74,8 @@ fun MainScreen(
         snackbarHostState = snackbarHostState,
         onNavigateToAddExpense = onNavigateToAddExpense,
         onNavigateToNotifications = onNavigateToNotifications,
-        onNavigateToAllExpenses = onNavigateToAllExpenses
+        onNavigateToAllExpenses = onNavigateToAllExpenses,
+        onNavigateToSavings = onNavigateToSavings
     )
 }
 
@@ -85,6 +87,7 @@ fun MainScreenContent(
     onNavigateToAddExpense: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onNavigateToAllExpenses: () -> Unit,
+    onNavigateToSavings: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
 
@@ -148,10 +151,11 @@ fun MainScreenContent(
                         if (LocalInspectionMode.current) {
                             AnalyticsScreenContent(
                                 expenses = emptyList(),
-                                currencySymbol = "रू"
+                                currencySymbol = "रू",
+                                onNavigateToSavings = onNavigateToSavings
                             )
                         } else {
-                            AnalyticsScreen()
+                            AnalyticsScreen(onNavigateToSavings = onNavigateToSavings)
                         }
                     }
                     2 -> {
@@ -217,7 +221,8 @@ fun MainScreenPreview() {
             snackbarHostState = snackbarHostState,
             onNavigateToAddExpense = {},
             onNavigateToNotifications = {},
-            onNavigateToAllExpenses = {}
+            onNavigateToAllExpenses = {},
+            onNavigateToSavings = {}
         )
     }
 }

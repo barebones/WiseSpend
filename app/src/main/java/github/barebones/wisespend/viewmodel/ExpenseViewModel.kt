@@ -7,6 +7,7 @@ import github.barebones.wisespend.data.local.AppDatabase
 import github.barebones.wisespend.data.model.BackupData
 import github.barebones.wisespend.data.model.Category
 import github.barebones.wisespend.data.model.Expense
+import github.barebones.wisespend.data.model.MonthlyBudget
 import github.barebones.wisespend.data.model.UserSettings
 import github.barebones.wisespend.data.model.toBackup
 import github.barebones.wisespend.data.model.toEntity
@@ -19,12 +20,17 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.time.LocalDate
+import java.time.Month
+import java.time.format.TextStyle
+import java.util.Locale
 
 // View model to access expense data
 class ExpenseViewModel(application: Application) : AndroidViewModel(application) {
@@ -41,37 +47,51 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     val currencyCode: StateFlow<String>
 
     val categories: StateFlow<List<ExpenseCategory>>
+    val monthlyBudgets: StateFlow<List<MonthlyBudget>>
+
+    val activeBudget: StateFlow<MonthlyBudget?>
 
     init {
         val db = AppDatabase.getDatabase(application)
-        repository = ExpenseRepository(db.expenseDao(), db.categoryDao(), db.settingsDao())
+        repository = ExpenseRepository(db.expenseDao(), db.categoryDao(), db.settingsDao(), db.monthlyBudgetDao())
 
-        recentExpenses = repository.getRecentExpenses()
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        val settingsFlow = repository.getSettings()
+
+        activeBudget = settingsFlow
+            .flatMapLatest { settings ->
+                if (settings == null || settings.activeBudgetId == 0) {
+                    flowOf(null)
+                } else {
+                    repository.getMonthlyBudget(settings.activeBudgetId)
+                }
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+        recentExpenses = activeBudget.flatMapLatest { budget ->
+            if (budget == null) flowOf(emptyList())
+            else repository.getExpensesFrom(budget.startDate)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
         allExpenses = repository.getAllExpenses()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-        totalSpent = repository.getTotalSpent()
+        totalSpent = activeBudget.flatMapLatest { budget ->
+            if (budget == null) flowOf(0.0)
+            else repository.getTotalSpentFrom(budget.startDate)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0.0)
+
+        budget = activeBudget.map { it?.budgetAmount ?: 0.0 }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0.0)
 
-        budget = repository.getSettings()
-            .map { it?.budget ?: 0.0 }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0.0)
+        availableBalance = combine(budget, totalSpent) { b, s ->
+            (b - s).coerceAtLeast(0.0)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0.0)
 
-        availableBalance = combine(budget, totalSpent) { budget, spent ->
-            (budget - spent).coerceAtLeast(0.0)
-        }.stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5_000),
-            0.0
-        )
-
-        userName = repository.getSettings()
+        userName = settingsFlow
             .map { it?.userName ?: "User" }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "User")
 
-        currencyCode = repository.getSettings()
+        currencyCode = settingsFlow
             .map { it?.currencyCode ?: "NPR" }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "NPR")
 
@@ -81,6 +101,9 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
                     ExpenseCategory(cat.name, IconMapper.fromKey(cat.iconKey))
                 }
             }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+        monthlyBudgets = repository.getAllMonthlyBudgets()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
         viewModelScope.launch {
@@ -95,6 +118,50 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
                     )
                 }
             }
+            
+            // Check if we have an active budget, if not, create one for current month
+            val currentSettings = repository.getSettings().first()
+            if (currentSettings == null || currentSettings.activeBudgetId == 0) {
+                val latestBudget = repository.getLatestBudgetSync()
+                if (latestBudget != null) {
+                    repository.updateActiveBudgetId(latestBudget.id)
+                } else {
+                    val now = LocalDate.now()
+                    val label = now.month.getDisplayName(TextStyle.FULL, Locale.getDefault()) + " " + now.year
+                    val newId = repository.insertMonthlyBudget(
+                        MonthlyBudget(
+                            label = label,
+                            budgetAmount = currentSettings?.budget ?: 0.0
+                        )
+                    )
+                    repository.updateActiveBudgetId(newId.toInt())
+                }
+            }
+        }
+
+        // Live update the spentAmount in the budget snapshot
+        viewModelScope.launch {
+            combine(activeBudget, totalSpent) { budget, spent ->
+                if (budget != null && budget.spentAmount != spent) {
+                    repository.insertMonthlyBudget(budget.copy(spentAmount = spent))
+                }
+            }.collect {}
+        }
+    }
+
+    fun startNewMonth(label: String, budgetAmount: Double? = null) {
+        viewModelScope.launch {
+            val currentBudget = activeBudget.value
+            val settings = repository.getSettings().first()
+            val amount = budgetAmount ?: settings?.budget ?: 0.0
+            
+            val newId = repository.insertMonthlyBudget(
+                MonthlyBudget(
+                    label = label,
+                    budgetAmount = amount
+                )
+            )
+            repository.updateActiveBudgetId(newId.toInt())
         }
     }
 
@@ -139,7 +206,13 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun setBudget(amount: Double) {
-        viewModelScope.launch { repository.setBudget(amount) }
+        viewModelScope.launch {
+            val current = activeBudget.value
+            if (current != null) {
+                repository.insertMonthlyBudget(current.copy(budgetAmount = amount))
+            }
+            repository.setBudget(amount)
+        }
     }
 
     fun setUsername(name: String){
@@ -181,25 +254,16 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     suspend fun importData(jsonData: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val backupData = Json.decodeFromString<BackupData>(jsonData)
-
-            // Version check for future compatibility
-            // TODO: add compatibility for old version of backup version
-            //  if i changed something later in db
             if (backupData.version > 1) {
                 return@withContext Result.failure(Exception("Unsupported backup version: ${backupData.version}"))
             }
-
-            // Clear existing data
-            // For a clean restore, we clear then insert
             repository.deleteAllExpenses()
             repository.deleteAllCategories()
-
             repository.insertAllExpenses(backupData.expenses.map { it.toEntity() })
             repository.insertAllCategories(backupData.categories.map { it.toEntity() })
             backupData.settings?.let {
                 repository.upsert(it.toEntity())
             }
-
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

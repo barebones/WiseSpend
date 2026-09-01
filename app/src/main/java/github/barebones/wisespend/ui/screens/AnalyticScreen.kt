@@ -1,10 +1,15 @@
 package github.barebones.wisespend.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -16,12 +21,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.composables.icons.lucide.History
+import com.composables.icons.lucide.Lucide
 import github.barebones.wisespend.data.model.Expense
 import github.barebones.wisespend.ui.components.AnalyticsWidgetContent
 import github.barebones.wisespend.ui.components.RecentTransactionsWidget
@@ -37,6 +45,7 @@ import java.time.temporal.TemporalAdjusters
 @Composable
 fun AnalyticsScreen(
     modifier: Modifier = Modifier,
+    onNavigateToSavings: () -> Unit,
     expenseViewModel: ExpenseViewModel = viewModel()
 ) {
     val expenses by expenseViewModel.allExpenses.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -46,7 +55,8 @@ fun AnalyticsScreen(
     AnalyticsScreenContent(
         modifier = modifier,
         expenses = expenses,
-        currencySymbol = currency.symbol
+        currencySymbol = currency.symbol,
+        onNavigateToSavings = onNavigateToSavings
     )
 }
 
@@ -54,7 +64,8 @@ fun AnalyticsScreen(
 fun AnalyticsScreenContent(
     modifier: Modifier = Modifier,
     expenses: List<Expense>,
-    currencySymbol: String = "रू"
+    currencySymbol: String = "रू",
+    onNavigateToSavings: () -> Unit = {}
 ) {
     Scaffold(
         modifier = modifier,
@@ -68,7 +79,23 @@ fun AnalyticsScreenContent(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
-                )
+                ),
+                actions = {
+                    IconButton(
+                        onClick = onNavigateToSavings,
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surface)
+                    ) {
+                        Icon(
+                            imageVector = Lucide.History,
+                            contentDescription = "Budget History",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
             )
         }
     ) { innerPadding ->

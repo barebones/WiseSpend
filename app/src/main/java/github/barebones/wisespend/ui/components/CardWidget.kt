@@ -68,8 +68,14 @@ fun CardWidget(
     var isBalanceVisible by remember { mutableStateOf(true) }
     var showBudgetDialog by remember { mutableStateOf(false) }
 
+    val exceeded = (spent - budget).coerceAtLeast(0.0)
     val available = (budget - spent).coerceAtLeast(0.0)
-    val displayText = if (isBalanceVisible) "$currencySymbol ${"%.0f".format(available)}" else "$currencySymbol •••••"
+    val isExceeded = spent > budget && budget > 0
+
+    val displayText = if (isBalanceVisible) {
+        if (isExceeded) "-$currencySymbol ${"%.0f".format(exceeded)}"
+        else "$currencySymbol ${"%.0f".format(available)}"
+    } else "$currencySymbol •••••"
 
     if (showBudgetDialog) {
         SetBudgetDialog(
@@ -102,10 +108,10 @@ fun CardWidget(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Available Balance",
+                    text = if (isExceeded) "Exceeded by" else "Available Balance",
                     fontSize = 13.sp,
                     letterSpacing = 0.4.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                    color = if (isExceeded) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
                 )
                 Box(
                     modifier = Modifier
@@ -131,7 +137,7 @@ fun CardWidget(
                     text = displayText,
                     fontSize = 40.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = if (isExceeded) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                 )
                 IconButton(
                     onClick = {
@@ -360,7 +366,7 @@ fun BudgetProgress(
                     shape = RoundedCornerShape(6.dp)
                 )
                 .padding(3.dp),
-            color = MaterialTheme.colorScheme.primary,
+            color = if (progress >= 1f && total > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
             trackColor = MaterialTheme.colorScheme.surface,
             strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
         )

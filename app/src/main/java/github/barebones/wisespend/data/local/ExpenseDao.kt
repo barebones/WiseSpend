@@ -30,4 +30,16 @@ interface ExpenseDao {
 
     @Query("SELECT COALESCE(SUM(amount), 0.0) FROM expenses")
     fun getTotalSpent(): Flow<Double>
+
+    @Query("SELECT * FROM expenses WHERE date LIKE :monthYearQuery || '%' ORDER BY createdAt DESC")
+    fun getExpensesForMonth(monthYearQuery: String): Flow<List<Expense>>
+
+    @Query("SELECT COALESCE(SUM(amount), 0.0) FROM expenses WHERE date LIKE :monthYearQuery || '%'")
+    fun getTotalSpentForMonth(monthYearQuery: String): Flow<Double>
+
+    @Query("SELECT * FROM expenses WHERE createdAt >= :startTimestamp ORDER BY createdAt DESC")
+    fun getExpensesFrom(startTimestamp: Long): Flow<List<Expense>>
+
+    @Query("SELECT COALESCE(SUM(amount), 0.0) FROM expenses WHERE createdAt >= :startTimestamp")
+    fun getTotalSpentFrom(startTimestamp: Long): Flow<Double>
 }
